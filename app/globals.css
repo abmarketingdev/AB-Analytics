@@ -1,0 +1,335 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   AB ANALYTICS — design tokens
+   Ground is violet-biased black so the iris accent sits inside a
+   family rather than floating on cold grey. Colour is deployed as
+   MASS (filled cards, filled arcs, filled pills) — never as thin
+   glowing strokes, which is what reads as generated.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* ground */
+  --canvas: #0b0a10;
+  --s1:     #14121c;
+  --s2:     #1c1926;
+  --s3:     #262234;
+  --line:   #2a2537;
+  --line2:  #383150;
+
+  /* text */
+  --fg1: #f2f0f7;
+  --fg2: #a8a2bc;
+  --fg3: #6e6885;
+
+  /* command — the authority colour, used BIG */
+  --iris:      #7c5cfc;
+  --iris-deep: #5b3fd9;
+  --iris-soft: #b8a5ff;
+  --magenta:   #e85d9a;
+
+  /* outcome — locked to meaning, never decorative */
+  --ja:  #2dd4a7;
+  --nei: #f2545b;
+  --ih:  #f5a524;
+  --fo:  #5b9df9;
+
+  /* severity reuses the outcome hues deliberately */
+  --crit: #f2545b;
+  --warn: #f5a524;
+
+  /* geometry */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+
+  /* density — flipped by [data-density] */
+  --row-h: 44px;
+  --pad-card: 16px 17px;
+  --fs-body: 13px;
+}
+
+[data-density="compact"] {
+  --row-h: 32px;
+  --pad-card: 11px 13px;
+  --fs-body: 12px;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-fg1: var(--fg1);
+  --color-fg2: var(--fg2);
+  --color-fg3: var(--fg3);
+  --color-iris: var(--iris);
+  --color-iris-deep: var(--iris-deep);
+  --color-iris-soft: var(--iris-soft);
+  --color-magenta: var(--magenta);
+  --color-ja: var(--ja);
+  --color-nei: var(--nei);
+  --color-ih: var(--ih);
+  --color-fo: var(--fo);
+  --color-crit: var(--crit);
+  --color-warn: var(--warn);
+
+  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+}
+
+/* ── base ─────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--fg1);
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* THE rule: every figure is tabular so columns lock and live values
+   update in place without the row twitching. */
+.tnum,
+[data-num] {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  line-height: 1.15;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid var(--iris);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--iris) 40%, transparent);
+  color: var(--fg1);
+}
+
+/* scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--s1); }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #4a4166; }
+
+/* ── typography scale ─────────────────────────────────────────── */
+.t-display { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+.t-h2      { font-size: 20px; font-weight: 700; letter-spacing: -0.015em; }
+.t-h3      { font-size: 15px; font-weight: 600; }
+.t-card    { font-size: 12.5px; font-weight: 600; color: var(--fg1); }
+.t-label {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  font-weight: 500;
+}
+.t-meta {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+  color: var(--fg3);
+  font-variant-numeric: tabular-nums;
+}
+.t-stat {
+  font-family: var(--font-plex-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* ═══ BOOT SEQUENCE ═══════════════════════════════════════════════
+   A spinner says "wait". A boot sequence says "a large system is
+   coming online for you." Timings mirror the design spec exactly.
+   ═══════════════════════════════════════════════════════════════ */
+.rr { fill: none; stroke: var(--iris); stroke-opacity: 0.42; stroke-width: 1.4; }
+.rr-draw { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
+.boot-playing .rr-draw { animation: rdraw 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.boot-playing .rr-2 { animation-delay: 0.12s; }
+.boot-playing .rr-3 { animation-delay: 0.24s; }
+@keyframes rdraw { to { stroke-dashoffset: 0; } }
+
+.radar-sweep { transform-origin: 50% 50%; opacity: 0; }
+.boot-playing .radar-sweep { animation: sweep-in 0.4s 0.5s forwards, radar-spin 2.6s 0.5s linear infinite; }
+.radar-ambient .radar-sweep { opacity: 1; animation: radar-spin 2.6s linear infinite; }
+@keyframes sweep-in { to { opacity: 1; } }
+@keyframes radar-spin { to { transform: rotate(360deg); } }
+
+.radar-blip { opacity: 0; }
+.boot-playing .radar-blip { animation: blip-in 0.5s forwards; }
+.boot-playing .blip-1 { animation-delay: 0.90s; }
+.boot-playing .blip-2 { animation-delay: 1.15s; }
+.boot-playing .blip-3 { animation-delay: 1.40s; }
+@keyframes blip-in {
+  0%   { opacity: 0; r: 0; }
+  60%  { opacity: 1; r: 4; }
+  100% { opacity: 0.9; r: 2.6; }
+}
+
+.boot-word span { opacity: 0; transform: translateY(7px); display: inline-block; }
+.boot-playing .boot-word span { animation: word-up 0.42s forwards; }
+@keyframes word-up { to { opacity: 1; transform: none; } }
+
+.boot-tag { opacity: 0; }
+.boot-playing .boot-tag { animation: fade-up 0.6s 1.35s forwards; }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.boot-bar i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--iris-deep), var(--iris), var(--magenta));
+}
+.boot-playing .boot-bar i { animation: bar-fill 2.1s 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes bar-fill { to { width: 100%; } }
+
+.boot-log > div { opacity: 0; }
+.boot-playing .boot-log > div { animation: log-in 0.3s forwards; }
+.boot-playing .boot-log > div:nth-child(1) { animation-delay: 1.60s; }
+.boot-playing .boot-log > div:nth-child(2) { animation-delay: 2.00s; }
+.boot-playing .boot-log > div:nth-child(3) { animation-delay: 2.50s; }
+.boot-playing .boot-log > div:nth-child(4) { animation-delay: 3.00s; }
+.boot-playing .boot-log > div:nth-child(5) { animation-delay: 3.50s; }
+@keyframes log-in { to { opacity: 1; } }
+
+/* one full turn on a successful data refresh — the only ambient identity motion */
+.radar-pulse { animation: radar-turn 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes radar-turn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* live status dot */
+.pulse-dot { animation: pulse-ring 2.4s ease-out infinite; }
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--ja) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* login ground — a hairline grid that barely breathes */
+.login-grid {
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.35;
+  animation: grid-breathe 14s ease-in-out infinite;
+}
+@keyframes grid-breathe {
+  0%, 100% { opacity: 0.22; }
+  50%      { opacity: 0.42; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .radar-ambient .radar-sweep,
+  .boot-playing .radar-sweep { opacity: 1; }
+}
+
+/* ═══ MOTION ══════════════════════════════════════════════════════════════
+   Motion is a status channel: every animation answers "what changed?".
+   Nothing loops except live presence, and nothing animates on mount just
+   because it can — that is the tell of a template.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* rows entering a list, staggered by index */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+.row-in { animation: row-in 0.26s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+
+/* a card arriving in a grid */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.995); }
+  to   { opacity: 1; transform: none; }
+}
+.card-in { animation: card-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+
+/* a route/section change */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: none; }
+}
+.view-in { animation: view-in 0.16s ease-out; }
+
+/* a value that just changed — brief flash, then it holds */
+@keyframes value-flash {
+  0%   { color: var(--iris-soft); }
+  100% { color: inherit; }
+}
+.value-flash { animation: value-flash 0.6s ease-out; }
+
+/* a new live event arriving in the feed */
+@keyframes knock-in {
+  0%   { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  60%  { transform: translateY(0) scale(1.006); }
+  100% { opacity: 1; transform: none; }
+}
+.knock-in { animation: knock-in 0.32s cubic-bezier(0.34, 1.3, 0.64, 1); }
+
+/* a breach appearing — the severity edge pulses once, then holds */
+@keyframes edge-pulse {
+  0%, 100% { box-shadow: inset 2px 0 0 var(--crit); }
+  50%      { box-shadow: inset 3px 0 0 var(--crit), 0 0 14px -4px var(--crit); }
+}
+.edge-pulse { animation: edge-pulse 0.65s ease-out; }
+
+/* charts draw themselves in once per dataset */
+@keyframes draw-line { to { stroke-dashoffset: 0; } }
+.draw-line {
+  stroke-dasharray: var(--len, 1200);
+  stroke-dashoffset: var(--len, 1200);
+  animation: draw-line 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes grow-bar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.grow-bar { transform-origin: bottom; animation: grow-bar 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+
+@keyframes sweep-arc { from { stroke-dashoffset: var(--circ, 320); } }
+.sweep-arc { animation: sweep-arc 0.75s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+
+/* a cell filling in a matrix */
+@keyframes cell-in { from { opacity: 0; transform: scale(0.86); } to { opacity: 1; transform: none; } }
+.cell-in { animation: cell-in 0.24s ease-out backwards; }
+
+/* interactive lift — signals "this is not just a readout" */
+.lift { transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease; }
+.lift:hover { transform: translateY(-1px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .row-in, .card-in, .view-in, .value-flash, .knock-in,
+  .edge-pulse, .draw-line, .grow-bar, .sweep-arc, .cell-in {
+    animation: none !important;
+  }
+  .draw-line { stroke-dashoffset: 0; }
+  .lift:hover { transform: none; }
+}

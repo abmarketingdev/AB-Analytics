@@ -1,0 +1,37 @@
+{
+  "name": "ab-analytics",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "sync:maplibre": "node -e \"const f=require('fs');['maplibre-gl-worker.mjs','maplibre-gl-shared.mjs'].forEach(n=>f.copyFileSync('node_modules/maplibre-gl/dist/'+n,'public/'+n))\"",
+    "predev": "npm run sync:maplibre",
+    "prebuild": "npm run sync:maplibre"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.3",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.18.0",
+    "lucide-react": "^0.474.0",
+    "maplibre-gl": "^6.6.0",
+    "next": "^16.3.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "tailwind-merge": "^2.6.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "playwright": "^1.62.1",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.3"
+  }
+}
