@@ -6,5 +6,3 @@ out
 next-env.d.ts
 .DS_Store
 
-# tool config, not part of the app
-CLAUDE.md

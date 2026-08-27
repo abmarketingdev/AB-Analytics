@@ -3,7 +3,10 @@
 
 import { ORG, scaledPeople, type DayClass, type Person } from "@/lib/mock/org";
 import { campaignOf, deviation, historyFor, sumRows, tenureWeeks, type DayRow } from "@/lib/mock/history";
+import { campaignsWorked, scopeRow } from "@/lib/mock/attribution";
+import { CAMPAIGNS } from "@/lib/mock/world";
 import { mulberry32, seedFrom } from "@/lib/mock/rng";
+import { DEFAULTS } from "./thresholds";
 import { mockCall } from "./client";
 
 export type { DayRow, DayClass };
@@ -43,8 +46,10 @@ function stability(rows: DayRow[]) {
   return Number((Math.max(0, 1 - sd / mean) * 100).toFixed(1));
 }
 
-function buildRow(p: Person): RosterRow {
-  const hist = historyFor(p.id);
+export interface RowLimits { minDoorsPerDay: number; minYesRatePercent: number }
+
+function buildRow(p: Person, campaignId = "all", limits: RowLimits = DEFAULTS): RosterRow {
+  const hist = historyFor(p.id).map((r) => scopeRow(r, p.id, campaignId));
   const window = hist.slice(-30);
   const s = sumRows(window);
   const dev = deviation(p.id);
@@ -60,16 +65,16 @@ function buildRow(p: Person): RosterRow {
   // The two company-wide rules, evaluated here so the roster, the hero card and
   // the drawer agree with the breach registry.
   const perDay = s.workingDays ? s.doors / s.workingDays : 0;
-  const belowVolume = s.workingDays >= 3 && perDay < 70;
-  const belowJa = s.doors > 200 && (s.ja / s.doors) * 100 < 2;
+  const belowVolume = s.workingDays >= 3 && perDay < limits.minDoorsPerDay;
+  const belowJa = s.doors > 200 && (s.ja / s.doors) * 100 < limits.minYesRatePercent;
 
   const reasons: string[] = [];
   if (dev.isAlert) reasons.push(`${dev.streakLen} dager under egen normal, −${dev.shortfallPct.toFixed(1)} %`);
   if (p.flag === "no_full_day") reasons.push("Ingen full dag på seks arbeidsdager");
   if (p.flag === "proximity") reasons.push("Gjentatte nærhetsbrudd ved registrering");
   if (p.flag === "late_start") reasons.push("Starter konsekvent etter resten av teamet");
-  if (belowVolume) reasons.push(`${perDay.toFixed(1)} dører per arbeidsdag (minimum 70)`);
-  if (belowJa) reasons.push(`Ja-rate ${((s.ja / s.doors) * 100).toFixed(1)} % (minimum 2,0 %)`);
+  if (belowVolume) reasons.push(`${perDay.toFixed(1)} dører per arbeidsdag (minimum ${limits.minDoorsPerDay})`);
+  if (belowJa) reasons.push(`Ja-rate ${((s.ja / s.doors) * 100).toFixed(1)} % (minimum ${limits.minYesRatePercent.toFixed(1).replace(".", ",")} %)`);
 
   const attention =
     (dev.isAlert ? 40 + Math.min(30, dev.shortfallPct * 0.6) : 0) +
@@ -104,22 +109,53 @@ function buildRow(p: Person): RosterRow {
   };
 }
 
-export const fetchRoster = (chiefId = "all") =>
+export const fetchRoster = (chiefId = "all", campaignId = "all") =>
   mockCall<RosterRow[]>(() =>
     [...scaledPeople().values()]
       .filter((p) => p.role !== "chief")
       .filter((p) => chiefId === "all" || p.chiefId === chiefId)
-      .map(buildRow)
+      // `.map(buildRow)` would hand the array index in as campaignId
+      .map((p) => buildRow(p, campaignId))
+      // someone who never worked the selected campaign has no rows to show
+      .filter((r) => campaignId === "all" || r.doors > 0)
       .sort((a, b) => b.attention - a.attention || b.doors - a.doors),
   );
 
 // ── dossier ─────────────────────────────────────────────────────────────────
+/** One rung of the admin's threshold hierarchy, with the knobs that actually get
+ *  evaluated on this screen. `applies` marks the rung that wins (employee >
+ *  campaign > manager > global); `checks` is that rung measured against the
+ *  person, so the page can show pass/fail instead of a bare number. */
+export interface ThresholdRung {
+  id: string;
+  scope: "global" | "manager" | "campaign" | "employee";
+  label: string;
+  applies: boolean;
+  exists: boolean;
+  minDoorsPerDay: number;
+  minYesRatePercent: number;
+  minContactRatePercent: number;
+  fullDayDoors: number;
+  deviationThresholdPct: number;
+  consecutiveDaysThreshold: number;
+}
+
+export interface ThresholdCheck {
+  key: string; label: string;
+  actual: number; limit: number; unit: string;
+  pass: boolean;
+}
+
 export interface Dossier {
   row: RosterRow;
+  campaignId: string;
+  campaignsWorked: Array<{ id: string; name: string; color: string; doors: number }>;
   history: DayRow[];
   deviation: ReturnType<typeof deviation>;
   teamMedianStart: number;
-  thresholdChain: Array<{ scope: string; label: string; value: number | null; applies: boolean }>;
+  thresholdChain: ThresholdRung[];
+  effective: ThresholdRung;
+  checks: ThresholdCheck[];
   integrity: {
     proximityViolations: number; unverifiedPct: number; gpsCoverage: number;
     burstDays: number; medianDistance: number;
@@ -129,13 +165,15 @@ export interface Dossier {
   rank: Array<{ week: string; rank: number }>;
 }
 
-export const fetchDossier = (personId: string) =>
+/** `campaignId` scopes every figure; `thresholdScope` lets the admin evaluate the
+ *  person against a DIFFERENT rung than the one that normally wins — the same
+ *  view-only what-if the backend exposes as `preview?threshold_id=`. */
+export const fetchDossier = (personId: string, campaignId = "all", thresholdScope = "auto") =>
   mockCall<Dossier>(() => {
     const p = ORG.people.get(personId);
     if (!p) throw new Error("Fant ikke personen.");
 
-    const row = buildRow(p);
-    const history = historyFor(personId);
+    const history = historyFor(personId).map((d) => scopeRow(d, personId, campaignId));
     const dev = deviation(personId);
     const r = mulberry32(seedFrom("dos:" + personId));
 
@@ -146,14 +184,67 @@ export const fetchDossier = (personId: string) =>
       .sort((a, b) => a - b);
     const teamMedianStart = starts.length ? starts[Math.floor(starts.length / 2)] : 15.2;
 
-    // employee > campaign > manager > global, resolved bottom-up
+    // which campaigns this person actually worked, with their volumes
+    const full = historyFor(personId).slice(-90);
+    const worked = campaignsWorked(personId, full)
+      .map((cid) => {
+        const c = CAMPAIGNS.find((x) => x.id === cid);
+        const doors = full.reduce((a, d) => a + scopeRow(d, personId, cid).doors, 0);
+        return { id: cid, name: c?.name ?? cid, color: c?.color ?? "var(--fg3)", doors };
+      })
+      .filter((c) => c.doors > 0)
+      .sort((a, b) => b.doors - a.doors);
+
+    // the admin's hierarchy, employee > campaign > manager > global
+    const ownCampaign = campaignOf(p);
+    const primaryCampaign = campaignId === "all" ? ownCampaign.id : campaignId;
+    const campName = CAMPAIGNS.find((c) => c.id === primaryCampaign)?.name ?? ownCampaign.name;
+    const chiefName = ORG.chiefs.find((c) => c.id === p.chiefId)?.name ?? "—";
     const hasCampaign = r() < 0.55;
     const hasEmployee = p.flag === "low_ja" && r() < 0.9;
-    const chain = [
-      { scope: "global", label: "Standard", value: 70, applies: !hasCampaign && !hasEmployee },
-      { scope: "manager", label: row.chiefName, value: 70, applies: false },
-      { scope: "campaign", label: row.campaignName, value: 80, applies: hasCampaign && !hasEmployee },
-      { scope: "employee", label: hasEmployee ? "Egen terskel" : "— ingen overstyring", value: hasEmployee ? 55 : null, applies: hasEmployee },
+
+    const rung = (
+      scope: ThresholdRung["scope"], id: string, label: string, exists: boolean,
+      over: Partial<ThresholdRung> = {},
+    ): ThresholdRung => ({
+      id, scope, label, exists, applies: false,
+      minDoorsPerDay: DEFAULTS.minDoorsPerDay,
+      minYesRatePercent: DEFAULTS.minYesRatePercent,
+      minContactRatePercent: DEFAULTS.minContactRatePercent,
+      fullDayDoors: DEFAULTS.fullDayDoors,
+      deviationThresholdPct: DEFAULTS.deviationThresholdPct,
+      consecutiveDaysThreshold: DEFAULTS.consecutiveDaysThreshold,
+      ...over,
+    });
+
+    const chain: ThresholdRung[] = [
+      rung("global", "t-global", "Standard", true),
+      rung("manager", `t-mgr-${p.chiefId}`, chiefName, true, { minDoorsPerDay: 70 }),
+      rung("campaign", `t-camp-${primaryCampaign}`, campName, hasCampaign,
+           { minDoorsPerDay: 80, minYesRatePercent: 2.5 }),
+      rung("employee", `t-emp-${personId}`, hasEmployee ? "Egen terskel" : "— ingen overstyring", hasEmployee,
+           { minDoorsPerDay: 55, minYesRatePercent: 1.5 }),
+    ];
+
+    // auto = the lowest rung that exists wins; otherwise the admin pinned one
+    const auto = [...chain].reverse().find((c) => c.exists) ?? chain[0];
+    const picked = thresholdScope === "auto"
+      ? auto
+      : chain.find((c) => c.scope === thresholdScope) ?? auto;
+    picked.applies = true;
+
+    // now the row can be measured against exactly what the chain resolved
+    const row = buildRow(p, campaignId, picked);
+
+    const checks: ThresholdCheck[] = [
+      { key: "doors", label: "Dører per arbeidsdag", actual: row.doorsPerDay,
+        limit: picked.minDoorsPerDay, unit: "", pass: row.doorsPerDay >= picked.minDoorsPerDay },
+      { key: "ja", label: "Ja-rate", actual: row.jaRate,
+        limit: picked.minYesRatePercent, unit: " %", pass: row.jaRate >= picked.minYesRatePercent },
+      { key: "contact", label: "Kontaktrate", actual: row.contactRate,
+        limit: picked.minContactRatePercent, unit: " %", pass: row.contactRate >= picked.minContactRatePercent },
+      { key: "dev", label: "Avvik fra egen normal", actual: dev.shortfallPct,
+        limit: picked.deviationThresholdPct, unit: " %", pass: dev.shortfallPct < picked.deviationThresholdPct },
     ];
 
     const prox = p.flag === "proximity" ? 12 : Math.floor(r() * 3);
@@ -175,8 +266,9 @@ export const fetchDossier = (personId: string) =>
     const hardShare = 0.34 + r() * 0.22;
 
     return {
-      row, history, deviation: dev, teamMedianStart,
-      thresholdChain: chain,
+      row, campaignId, campaignsWorked: worked,
+      history, deviation: dev, teamMedianStart,
+      thresholdChain: chain, effective: picked, checks,
       integrity: {
         proximityViolations: prox,
         unverifiedPct: Number((3 + r() * 14).toFixed(1)),

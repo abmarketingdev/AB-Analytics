@@ -2,7 +2,7 @@
  *  `preview.campaigns[]` (incl. nei_breakdown) and the maps CampaignViewSet
  *  stats action (doors / knocked / remaining / coverage). */
 
-import { CAMPAIGNS, sparkFor } from "@/lib/mock/world";
+import { CAMPAIGNS, campaignWeek, sparkFor } from "@/lib/mock/world";
 import { AREAS } from "@/lib/mock/geo";
 import { ORG, scaledPeople } from "@/lib/mock/org";
 import { historyFor, sumRows } from "@/lib/mock/history";
@@ -45,7 +45,7 @@ export const fetchCampaignList = () =>
       const areas = AREAS.filter((a) => a.campaignId === c.id);
       const doors = c.doors + c.remaining;
       const roster = peopleOn(c.id);
-      const weeks = 3 + Math.floor(r() * 22);
+      const weeks = campaignWeek(c.id);
       const perWeek = c.doors / Math.max(1, weeks);
       const weeksLeft = Math.ceil(c.remaining / Math.max(1, perWeek));
       const finish = new Date();

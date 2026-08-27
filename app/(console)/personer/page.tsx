@@ -26,6 +26,7 @@ const GRID = COLS.map((c) => c.w).join(" ") + " 150px";
 
 export default function PersonerPage() {
   const chief = useFilter((s) => s.chief);
+  const campaign = useFilter((s) => s.campaign);
   const router = useRouter();
   const openDrawer = useUi((s) => s.openDrawer);
   const [q, setQ] = useState("");
@@ -33,7 +34,10 @@ export default function PersonerPage() {
   const [only, setOnly] = useState<"alle" | "varsel" | "pålogget">("alle");
   const [sort, setSort] = useState<SortKey>("attention");
 
-  const roster = useQuery({ queryKey: ["roster", chief], queryFn: () => fetchRoster(chief) });
+  const roster = useQuery({
+    queryKey: ["roster", chief, campaign],
+    queryFn: () => fetchRoster(chief, campaign),
+  });
 
   const rows = useMemo(() => {
     let r = roster.data ?? [];

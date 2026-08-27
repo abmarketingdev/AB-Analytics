@@ -42,6 +42,18 @@ export const FULL_DAY_DOORS = 1860;
 const REAL_CLOCK =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_REAL_CLOCK === "1";
 
+/** The instant the demo believes it is: today's canvassing window advanced by
+ *  `workdayProgress`. Outside 14:00–21:00 the real wall clock is meaningless here
+ *  — a backfilled event log placed inside the window and a live tail stamped with
+ *  `new Date()` would not even sort into the same order. Everything that stamps a
+ *  "now" during the workday must go through this. */
+export function demoNow(now = new Date()): Date {
+  const t = new Date(now);
+  const mins = (DAY_START + workdayProgress(now) * (DAY_END - DAY_START)) * 60;
+  t.setHours(Math.floor(mins / 60), Math.floor(mins % 60), Math.floor((mins * 60) % 60), 0);
+  return t;
+}
+
 export function workdayProgress(now = new Date()): number {
   const parts = new Intl.DateTimeFormat("nb-NO", {
     timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", hour12: false,
@@ -83,6 +95,13 @@ export const CAMPAIGNS: Campaign[] = [
   { id: "strom", name: "Strømmestiftelsen",  color: "#f5a524", doors: 2640,  jaRate: 4.1, remaining: 1118,  coverage: 70 },
   { id: "bk",    name: "Blå Kors",           color: "#e85d9a", doors: 1627,  jaRate: 3.3, remaining: 4402,  coverage: 27 },
 ];
+
+/** Weeks since the campaign started. Shared so the campaign card, the campaign
+ *  detail and the per-person campaign view cannot disagree about how old a
+ *  campaign is — the same drift that gave four different headcounts. */
+export function campaignWeek(campaignId: string): number {
+  return 3 + Math.floor(mulberry32(seedFrom("camp:" + campaignId))() * 22);
+}
 
 export const TOTAL_DOORS = CAMPAIGNS.reduce((a, c) => a + c.doors, 0); // 38 412
 

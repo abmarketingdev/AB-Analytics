@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarRange, GitBranch } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { Avatar } from "@/components/personer/bits";
 import { fetchCampaignDetail, fetchCampaignList } from "@/lib/api/campaigns";
-import { useUi } from "@/lib/store/ui";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -130,9 +130,10 @@ export default function KampanjerPage() {
           </div>
 
           <Card>
-            <CardHead title="Bemanning" sub={`${n(d.roster.length)} personer på kampanjen`} />
+            <CardHead title="Bemanning" sub={`${n(d.roster.length)} personer på kampanjen`}
+                      right={<span className="font-mono text-[10.5px] text-fg3">trykk for kampanjeprofil</span>} />
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              {d.roster.slice(0, 12).map((p) => <RosterChip key={p.id} p={p} />)}
+              {d.roster.map((p) => <RosterChip key={p.id} p={p} campaignId={d.id} />)}
             </div>
           </Card>
         </>
@@ -274,17 +275,21 @@ function HourWeek({ m }: { m: number[][] }) {
   );
 }
 
-function RosterChip({ p }: { p: { id: string; name: string; initials: string; doors: number; jaRate: number; pace: number } }) {
-  const openDrawer = useUi((s) => s.openDrawer);
+/** Links into the CAMPAIGN-scoped profile, not the global drawer. Clicking a name
+ *  while standing inside a campaign should never answer with all-campaign numbers. */
+function RosterChip({ p, campaignId }: {
+  p: { id: string; name: string; initials: string; doors: number; jaRate: number; pace: number };
+  campaignId: string;
+}) {
   return (
-    <button type="button" onClick={() => openDrawer(p.id)}
-            className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-s2 px-3 py-2 text-left transition-colors hover:border-line2">
+    <Link href={`/kampanjer/${campaignId}/${p.id}`}
+          className="lift flex cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-s2 px-3 py-2 text-left transition-colors hover:border-line2">
       <Avatar initials={p.initials} size={24} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[12px] font-medium">{p.name}</span>
         <span data-num className="block font-mono text-[9.5px] text-fg3">{n(p.doors)} dører · {n1(p.pace)} d/t</span>
       </span>
       <span data-num className={cn("font-mono text-[12px]", p.jaRate >= 3 ? "text-ja" : "text-fg2")}>{n1(p.jaRate)} %</span>
-    </button>
+    </Link>
   );
 }

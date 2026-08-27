@@ -39,8 +39,15 @@ export function DossierPeek({ personId }: { personId: string }) {
         </div>
 
         <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
-          <span className="rounded-md px-2 py-[3px] text-[10.5px] font-semibold text-white"
-                style={{ background: row.campaignColor }}>{row.campaignName}</span>
+          {/* the chip is the way into the campaign-scoped view — the peek's numbers
+              are all-campaign, and that difference should be one click away */}
+          <Link href={`/kampanjer/${row.campaignId}/${row.id}`}
+                onClick={closeDrawer}
+                title={`Se kun ${row.campaignName}`}
+                className="rounded-md px-2 py-[3px] text-[10.5px] font-semibold text-white transition-opacity hover:opacity-85"
+                style={{ background: row.campaignColor }}>
+            {row.campaignName}
+          </Link>
           <span data-num className="rounded-md bg-s3 px-2 py-[3px] text-[10.5px] text-fg2">uke {row.tenureWeeks}</span>
           <span className={cn("flex items-center gap-1 rounded-md px-2 py-[3px] text-[10.5px] font-semibold",
                               row.online ? "bg-ja/18 text-ja" : "bg-s3 text-fg3")}>
