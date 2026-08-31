@@ -21,7 +21,11 @@ export function DossierPeek({ personId }: { personId: string }) {
 
   const { row, history, deviation: dev } = q.data;
   const last30 = history.slice(-30);
-  const alert = row.reasons.length > 0;
+  // Same 3-level verdict the roster and the full dossier use — read a word, not a score.
+  const crit = row.reasons.length >= 2 || (dev.isAlert && dev.shortfallPct >= 35) || row.attention >= 50;
+  const warn = !crit && (row.reasons.length > 0 || row.attention >= 25 || !!row.flag);
+  const statusWord = crit ? "Krever oppfølging" : warn ? "Følg med" : "På sporet";
+  const statusTone = crit ? "text-crit" : warn ? "text-warn" : "text-ja";
 
   return (
     <div className="flex h-full flex-col">
@@ -57,21 +61,20 @@ export function DossierPeek({ personId }: { personId: string }) {
 
         {/* the verdict, stated plainly */}
         <div className={cn("mt-5 rounded-xl border p-4",
-                           alert ? "border-crit/40 bg-crit/8" : "border-line bg-s2")}>
+                           crit ? "border-crit/40 bg-crit/8" : warn ? "border-warn/40 bg-warn/8" : "border-line bg-s2")}>
           <div className="flex items-center gap-2">
-            {alert && <TriangleAlert size={14} className="flex-none text-crit" />}
-            <span className={cn("text-[13px] font-semibold", alert ? "text-crit" : "text-ja")}>
-              {alert ? "Krever oppfølging" : "Ingen aktive varsler"}
-            </span>
-            <span data-num className="ml-auto font-mono text-[19px] font-bold">
-              {row.attention}
+            {(crit || warn) && <TriangleAlert size={14} className={cn("flex-none", statusTone)} />}
+            <span className={cn("text-[14px] font-bold", statusTone)}>{statusWord}</span>
+            <span data-num title="Tilsyn-score (0–100)"
+                  className="ml-auto rounded bg-s3 px-1.5 py-[2px] font-mono text-[10px] text-fg3">
+              tilsyn {row.attention}
             </span>
           </div>
-          {alert && (
+          {row.reasons.length > 0 && (
             <ul className="mt-2.5 flex flex-col gap-1.5">
               {row.reasons.map((why: string) => (
                 <li key={why} className="flex gap-2 text-[12px] leading-snug text-fg2">
-                  <span className="mt-[6px] h-1 w-1 flex-none rounded-full bg-crit" />
+                  <span className={cn("mt-[6px] h-1 w-1 flex-none rounded-full", crit ? "bg-crit" : "bg-warn")} />
                   {why}
                 </li>
               ))}

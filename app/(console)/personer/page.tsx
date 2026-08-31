@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Search, TriangleAlert, WifiOff } from "lucide-react";
+import { Search, SlidersHorizontal, TriangleAlert, WifiOff } from "lucide-react";
 import { fetchRoster, type RosterRow } from "@/lib/api/people";
 import { Avatar, DayStrip, Sev } from "@/components/personer/bits";
 import { useFilter } from "@/lib/store/filter";
@@ -12,17 +12,32 @@ import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 type SortKey = "attention" | "doors" | "jaRate" | "convRate" | "pace" | "stability" | "name";
+type Col = { key: SortKey; label: string; w: string; num?: boolean };
 
-const COLS: Array<{ key: SortKey; label: string; w: string; num?: boolean }> = [
+/** At rest: name, a plain-language STATUS word, and two headline numbers. The
+ *  expert columns (samtalekonvertering, tempo, stabilitet, the raw tilsyn score)
+ *  are a data-scientist's view — they live behind "Avansert", off by default. */
+const BASE_COLS: Col[] = [
   { key: "name", label: "Navn", w: "minmax(190px,1.4fr)" },
+  { key: "attention", label: "Status", w: "142px" },
   { key: "doors", label: "Dører", w: "78px", num: true },
-  { key: "jaRate", label: "Ja-rate", w: "78px", num: true },
+  { key: "jaRate", label: "Ja-rate", w: "80px", num: true },
+];
+const ADV_COLS: Col[] = [
   { key: "convRate", label: "Samtale", w: "82px", num: true },
   { key: "pace", label: "Tempo", w: "78px", num: true },
   { key: "stability", label: "Stab.", w: "68px", num: true },
   { key: "attention", label: "Tilsyn", w: "66px", num: true },
 ];
-const GRID = COLS.map((c) => c.w).join(" ") + " 150px";
+
+/** Plain-language verdict — the same idea the dossier leads with, so a manager
+ *  reads a word, not a bare 0–100 score. */
+function statusOf(r: RosterRow): { word: string; tone: string } {
+  if (r.attention >= 50 || r.reasons.length >= 2) return { word: "Trenger oppfølging", tone: "bg-nei/16 text-nei" };
+  if (r.tenureWeeks <= 2) return { word: "Ny", tone: "bg-s3 text-fg2" };
+  if (r.attention >= 25 || r.flag || r.reasons.length > 0) return { word: "Følg med", tone: "bg-warn/16 text-warn" };
+  return { word: "På sporet", tone: "bg-ja/16 text-ja" };
+}
 
 export default function PersonerPage() {
   const chief = useFilter((s) => s.chief);
@@ -33,6 +48,10 @@ export default function PersonerPage() {
   const [role, setRole] = useState<"alle" | "seller" | "leader">("alle");
   const [only, setOnly] = useState<"alle" | "varsel" | "pålogget">("alle");
   const [sort, setSort] = useState<SortKey>("attention");
+  const [advanced, setAdvanced] = useState(false);
+
+  const cols = advanced ? [...BASE_COLS, ...ADV_COLS] : BASE_COLS;
+  const grid = cols.map((c) => c.w).join(" ") + " 150px";
 
   const roster = useQuery({
     queryKey: ["roster", chief, campaign],
@@ -80,18 +99,25 @@ export default function PersonerPage() {
           <Seg value={only} onChange={setOnly}
                opts={[["alle", "Alle"], ["varsel", "Varsel"], ["pålogget", "Pålogget"]]} />
 
+          <button type="button" onClick={() => setAdvanced((v) => !v)}
+                  title="Vis samtalekonvertering, tempo, stabilitet og tilsyn-score"
+                  className={cn("flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11.5px] transition-colors",
+                                advanced ? "border-iris bg-iris/15 text-iris-soft" : "border-line2 bg-s2 text-fg3 hover:text-fg2")}>
+            <SlidersHorizontal size={12} /> Avansert
+          </button>
+
           {agg && (
             <span data-num className="ml-auto font-mono text-[11px] text-fg3">
               {n(rows.length)} personer · {n(agg.doors)} dører · {n1((agg.ja / (agg.doors || 1)) * 100)} % ja ·{" "}
-              <span className="text-crit">{agg.flagged} under tilsyn</span>
+              <span className="text-crit">{agg.flagged} trenger oppfølging</span>
             </span>
           )}
         </div>
 
         {/* header */}
-        <div className="grid items-center gap-3 border-b border-line px-4 py-1.5" style={{ gridTemplateColumns: GRID }}>
-          {COLS.map((c) => (
-            <button key={c.key} type="button" onClick={() => setSort(c.key)}
+        <div className="grid items-center gap-3 border-b border-line px-4 py-1.5" style={{ gridTemplateColumns: grid }}>
+          {cols.map((c) => (
+            <button key={c.label} type="button" onClick={() => setSort(c.key)}
                     className={cn("t-label cursor-pointer text-left hover:text-fg2", c.num && "text-right",
                                   sort === c.key && "text-iris-soft")}>
               {c.label}
@@ -105,10 +131,12 @@ export default function PersonerPage() {
           {roster.isPending && <div className="m-4 h-40 animate-pulse rounded-lg bg-s1" />}
           {roster.isError && <p className="p-4 text-[13px] text-nei">Kunne ikke hente listen.</p>}
 
-          {rows.map((r, i) => (
+          {rows.map((r, i) => {
+            const st = statusOf(r);
+            return (
             <button
               key={r.id} type="button"
-              style={{ gridTemplateColumns: GRID, height: "var(--row-h)", animationDelay: `${Math.min(i, 18) * 16}ms` }}
+              style={{ gridTemplateColumns: grid, height: "var(--row-h)", animationDelay: `${Math.min(i, 18) * 16}ms` }}
               onClick={() => router.push(`/personer/${r.id}`)}
               onAuxClick={(e) => { if (e.button === 1) openDrawer(r.id); }}
               title="Åpne full profil — midtklikk for hurtigvisning"
@@ -130,15 +158,26 @@ export default function PersonerPage() {
                 </span>
               </span>
 
+              <span>
+                <span className={cn("inline-flex items-center rounded-full px-2 py-[3px] text-[10.5px] font-semibold", st.tone)}>
+                  {st.word}
+                </span>
+              </span>
+
               <Num v={n(r.doors)} />
               <Num v={`${n1(r.jaRate)}`} tone={r.jaRate < 2 ? "text-nei" : r.jaRate >= 3.5 ? "text-ja" : undefined} />
-              <Num v={`${n1(r.convRate)}`} />
-              <Num v={n1(r.pace)} />
-              <Num v={n1(r.stability)} />
-              <span className="justify-self-end"><Sev n={r.attention} /></span>
+
+              {advanced && <>
+                <Num v={`${n1(r.convRate)}`} />
+                <Num v={n1(r.pace)} />
+                <Num v={n1(r.stability)} />
+                <span className="justify-self-end"><Sev n={r.attention} /></span>
+              </>}
+
               <span className="overflow-hidden"><DayStrip days={r.strip} size={4} /></span>
             </button>
-          ))}
+            );
+          })}
 
           {!roster.isPending && rows.length === 0 && (
             <p className="p-8 text-center text-[13px] text-fg3">Ingen treff.</p>

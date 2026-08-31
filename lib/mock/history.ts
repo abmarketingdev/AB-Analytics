@@ -16,6 +16,10 @@ export interface DayRow {
   lastKnock: number;
   activeMinutes: number;   // idle-capped at 90 min, like the real column
   dayClass: DayClass;
+  /** employed on this date — pre-hire days are blank, not bad */
+  hired: boolean;
+  /** not rostered (weekend or a day off) — distinct from rostered-but-nothing */
+  off: boolean;
 }
 
 const DAYS = 120;
@@ -120,6 +124,8 @@ export function historyFor(personId: string): DayRow[] {
       lastKnock: doors ? end : 0,
       activeMinutes,
       dayClass: classify(doors),
+      hired,
+      off,
     };
   });
 

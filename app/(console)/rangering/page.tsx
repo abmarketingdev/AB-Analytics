@@ -2,14 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Avatar } from "@/components/personer/bits";
 import { fetchRoster, type RosterRow } from "@/lib/api/people";
 import { fetchOrgActivity } from "@/lib/api/dashboard";
 import { useFilter } from "@/lib/store/filter";
 import { useUi } from "@/lib/store/ui";
-import { mulberry32, seedFrom } from "@/lib/mock/rng";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -29,6 +28,7 @@ export default function RangeringPage() {
   const [tab, setTab] = useState<"personer" | "team">("personer");
   const [metric, setMetric] = useState<Metric>("doors");
   const [hover, setHover] = useState<string | null>(null);
+  const [advanced, setAdvanced] = useState(false);
 
   const roster = useQuery({ queryKey: ["roster", chief], queryFn: () => fetchRoster(chief) });
   const org = useQuery({ queryKey: ["org", chief], queryFn: () => fetchOrgActivity(chief) });
@@ -40,23 +40,14 @@ export default function RangeringPage() {
     [roster.data, metric],
   );
 
-  /** Rank movement. Derived from a stable per-person offset so the ▲▼ is
-   *  reproducible rather than random noise on every render. */
-  const movement = useMemo(() => {
-    const map = new Map<string, number>();
-    ranked.forEach((r, i) => {
-      const drift = Math.round((mulberry32(seedFrom(`mv:${r.id}:${metric}`))() - 0.5) * 14);
-      map.set(r.id, drift);
-    });
-    return map;
-  }, [ranked, metric]);
-
   const stats = useMemo(() => {
     const v = ranked.map((r) => r[metric] as number).sort((a, b) => a - b);
     if (!v.length) return null;
     const at = (p: number) => v[Math.min(v.length - 1, Math.floor(v.length * p))];
     return { min: v[0], max: v[v.length - 1], p10: at(0.1), p50: at(0.5), p90: at(0.9) };
   }, [ranked, metric]);
+
+  const topVal = ranked.length ? (ranked[0][metric] as number) : 1;
 
   return (
     <div className="flex flex-col gap-3.5 p-4">
@@ -81,53 +72,63 @@ export default function RangeringPage() {
           ))}
         </div>
 
+        <button type="button" onClick={() => setAdvanced((v) => !v)}
+                title="Vis fordeling (beeswarm) og team-radar — persentiler for de statistikk-kyndige"
+                className={cn("ml-auto flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11.5px] transition-colors",
+                              advanced ? "border-iris bg-iris/15 text-iris-soft" : "border-line2 text-fg3 hover:text-fg2")}>
+          <SlidersHorizontal size={12} /> Avansert
+        </button>
+
         {stats && (
-          <span data-num className="ml-auto font-mono text-[11px] text-fg3">
-            p10 {m.fmt(stats.p10)} · median {m.fmt(stats.p50)} · p90 {m.fmt(stats.p90)}
+          <span data-num className="font-mono text-[11px] text-fg3">
+            {advanced
+              ? <>p10 {m.fmt(stats.p10)} · median {m.fmt(stats.p50)} · p90 {m.fmt(stats.p90)}</>
+              : <>median <span className="text-fg1">{m.fmt(stats.p50)}</span> · typisk {m.fmt(stats.p10)}–{m.fmt(stats.p90)}</>}
           </span>
         )}
       </div>
 
       {tab === "personer" ? (
-        <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-5">
-          {/* leaderboard */}
-          <Card className="xl:col-span-2">
+        <div className={cn("grid grid-cols-1 gap-3.5", advanced && "xl:grid-cols-5")}>
+          {/* leaderboard — a clean ranked bar list */}
+          <Card className={advanced ? "xl:col-span-2" : ""}>
             <CardHead title="Rangering" sub={`etter ${m.label.toLowerCase()}`} />
             <div className="-mx-[17px] -mb-[16px] mt-[-6px] max-h-[560px] overflow-y-auto">
-              {ranked.map((r, i) => {
-                const mv = movement.get(r.id) ?? 0;
-                return (
-                  <Row key={r.id} r={r} i={i} mv={mv} metric={metric} fmt={m.fmt} unit={m.unit}
-                       hover={hover === r.id} onHover={setHover} />
-                );
-              })}
+              {ranked.map((r, i) => (
+                <Row key={r.id} r={r} i={i} metric={metric} fmt={m.fmt} unit={m.unit} max={topVal}
+                     hover={hover === r.id} onHover={setHover} />
+              ))}
             </div>
           </Card>
 
-          {/* the differentiator: the shape of the org, not just its extremes */}
-          <Card className="xl:col-span-3">
-            <CardHead
-              title="Fordeling"
-              sub="hver prikk er én person"
-              right={<span className="font-mono text-[10.5px] text-fg3">{n(ranked.length)} personer</span>}
-            />
-            <Swarm rows={ranked} metric={metric} stats={stats} hover={hover} onHover={setHover} fmt={m.fmt} unit={m.unit} />
-            <p className="mt-3 border-t border-line pt-2.5 text-[11px] leading-snug text-fg3">
-              En topp-ti-liste skjuler formen. Her ser du om organisasjonen har én svak hale
-              eller to adskilte grupper — to helt ulike problemer.
-            </p>
-          </Card>
+          {/* the differentiator — only when asked for */}
+          {advanced && (
+            <Card className="xl:col-span-3">
+              <CardHead
+                title="Fordeling"
+                sub="hver prikk er én person"
+                right={<span className="font-mono text-[10.5px] text-fg3">{n(ranked.length)} personer</span>}
+              />
+              <Swarm rows={ranked} metric={metric} stats={stats} hover={hover} onHover={setHover} fmt={m.fmt} unit={m.unit} />
+              <p className="mt-3 border-t border-line pt-2.5 text-[11px] leading-snug text-fg3">
+                En topp-ti-liste skjuler formen. Her ser du om organisasjonen har én svak hale
+                eller to adskilte grupper — to helt ulike problemer.
+              </p>
+            </Card>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-2">
+        <div className={cn("grid grid-cols-1 gap-3.5", advanced && "xl:grid-cols-2")}>
           <Card>
             <CardHead title="Team" sub={`etter ${m.label.toLowerCase()}`} />
             <TeamTable org={org.data} metric={metric} fmt={m.fmt} unit={m.unit} />
           </Card>
-          <Card>
-            <CardHead title="Team-radar" sub="6 akser, normalisert" />
-            <Radar org={org.data} />
-          </Card>
+          {advanced && (
+            <Card>
+              <CardHead title="Team-radar" sub="6 akser, normalisert" />
+              <Radar org={org.data} />
+            </Card>
+          )}
         </div>
       )}
 
@@ -158,34 +159,37 @@ export default function RangeringPage() {
   );
 }
 
-function Row({ r, i, mv, metric, fmt, unit, hover, onHover }: {
-  r: RosterRow; i: number; mv: number; metric: Metric;
-  fmt: (v: number) => string; unit: string; hover: boolean; onHover: (id: string | null) => void;
+function Row({ r, i, metric, fmt, unit, max, hover, onHover }: {
+  r: RosterRow; i: number; metric: Metric;
+  fmt: (v: number) => string; unit: string; max: number;
+  hover: boolean; onHover: (id: string | null) => void;
 }) {
   const openDrawer = useUi((s) => s.openDrawer);
-  const Icon = mv > 0 ? ArrowUp : mv < 0 ? ArrowDown : Minus;
+  const val = r[metric] as number;
+  const pct = max > 0 ? Math.min(100, Math.max(2, (val / max) * 100)) : 0;
+  const flagged = r.attention >= 40;
   return (
     <button
       type="button"
       onMouseEnter={() => onHover(r.id)}
       onMouseLeave={() => onHover(null)}
       onClick={() => openDrawer(r.id)}
-      className={cn("flex w-full items-center gap-2.5 border-t border-line px-[17px] py-1.5 text-left transition-colors",
+      className={cn("flex w-full items-center gap-2.5 border-t border-line px-[17px] py-2 text-left transition-colors",
                     hover ? "bg-s3" : "hover:bg-s2")}
     >
       <span data-num className={cn("w-6 text-right font-mono text-[11px]",
                                    i < 3 ? "font-bold text-iris-soft" : "text-fg3")}>{i + 1}</span>
       <Avatar initials={r.initials} size={22} />
-      <span className="min-w-0 flex-1">
+      <span className="w-[122px] min-w-0 flex-none">
         <span className="block truncate text-[12px] font-medium">{r.name}</span>
         <span className="block truncate font-mono text-[9.5px] text-fg3">{r.teamName}</span>
       </span>
-      <span className={cn("flex items-center gap-0.5 font-mono text-[10px]",
-                          mv > 0 ? "text-ja" : mv < 0 ? "text-nei" : "text-fg3")}>
-        <Icon size={9} />{mv !== 0 && Math.abs(mv)}
+      <span className="h-1.5 min-w-[24px] flex-1 overflow-hidden rounded-sm bg-s3">
+        <span className="block h-full rounded-sm"
+              style={{ width: `${pct}%`, background: flagged ? "var(--crit)" : "var(--iris)" }} />
       </span>
-      <span data-num className="w-16 text-right font-mono text-[12.5px] font-semibold">
-        {fmt(r[metric] as number)}<span className="ml-0.5 text-[9px] text-fg3">{unit}</span>
+      <span data-num className="w-16 flex-none text-right font-mono text-[12.5px] font-semibold">
+        {fmt(val)}<span className="ml-0.5 text-[9px] text-fg3">{unit}</span>
       </span>
     </button>
   );
@@ -295,7 +299,7 @@ function TeamTable({ org, metric, fmt, unit }: {
 function Radar({ org }: { org: Awaited<ReturnType<typeof fetchOrgActivity>> | undefined }) {
   if (!org) return <div className="h-52 animate-pulse rounded-lg bg-s2" />;
   const teams = org.chiefs.flatMap((c) => c.teams).slice(0, 3);
-  const AX = ["Dører", "Ja-rate", "Tempo", "Bemanning", "Pålogget", "Team"];
+  const AX = ["Dører", "Ja-rate", "Tempo", "Bemanning", "Pålogget"];
   const R = 78, CX = 110, CY = 100;
 
   const maxima = [
@@ -304,7 +308,6 @@ function Radar({ org }: { org: Awaited<ReturnType<typeof fetchOrgActivity>> | un
     Math.max(...teams.map((t) => t.pace), 1),
     Math.max(...teams.map((t) => t.headcount), 1),
     Math.max(...teams.map((t) => t.online), 1),
-    1,
   ];
 
   const pt = (i: number, f: number): [number, number] => {
@@ -320,7 +323,7 @@ function Radar({ org }: { org: Awaited<ReturnType<typeof fetchOrgActivity>> | un
                    fill="none" stroke="var(--line)" strokeWidth="1" />
         ))}
         {teams.map((t) => {
-          const vals = [t.doors, t.jaRate, t.pace, t.headcount, t.online, 0.8];
+          const vals = [t.doors, t.jaRate, t.pace, t.headcount, t.online];
           return (
             <polygon key={t.id}
                      points={vals.map((v, i) => pt(i, Math.min(1, v / maxima[i])).join(",")).join(" ")}

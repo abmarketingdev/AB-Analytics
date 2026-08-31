@@ -4,13 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft, Check, Layers, Radio, Route, ShieldCheck, SlidersHorizontal,
+  ArrowLeft, Check, ChevronRight, Layers, Radio, Route, ShieldCheck, SlidersHorizontal,
   TrendingUp, TriangleAlert, X,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
+import { InteractiveTrend } from "@/components/charts/InteractiveTrend";
 import { fetchDossier, type ThresholdCheck, type ThresholdRung } from "@/lib/api/people";
 import { useFilter } from "@/lib/store/filter";
-import { Avatar, DAY_COLOR, DAY_LABEL, DayLegend, DayStrip } from "./bits";
+import { Avatar } from "./bits";
+import { Pulse, normalFor, pulseFill } from "./Pulse";
+import { DAY_TOLERANCE_PCT } from "@/lib/api/thresholds";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { DayClass } from "@/lib/mock/org";
@@ -49,9 +52,16 @@ export function DossierFull({ personId }: { personId: string }) {
     integrity, ramp, neiSplit, campaignsWorked,
   } = q.data;
   const last14 = history.slice(-14);
+  // one long-run normal for every panel that colours a day
+  const normal = normalFor(history);
   const last60 = history.slice(-60);
   const failing = checks.filter((c) => !c.pass);
   const alert = dev.isAlert || !!row.flag || failing.length > 0;
+  // Lead with a WORD, not a bare 0–100 score — an admin should read the verdict,
+  // not decode it. The score survives as a small chip for those who want it.
+  const crit = failing.length > 0 || (dev.isAlert && dev.shortfallPct >= 35);
+  const statusWord = crit ? "Krever oppfølging" : alert ? "Følg med" : "På sporet";
+  const statusTone = crit ? "text-crit" : alert ? "text-warn" : "text-ja";
   const scoped = campaignId !== "all";
   const scopedName = campaignsWorked.find((c) => c.id === campaignId)?.name ?? row.campaignName;
 
@@ -89,12 +99,14 @@ export function DossierFull({ personId }: { personId: string }) {
                          alert ? "bg-crit/6" : "bg-ja/5")}>
         <div className="flex flex-none items-center gap-2.5">
           {alert
-            ? <TriangleAlert size={16} className="text-crit" />
-            : <ShieldCheck size={16} className="text-ja" />}
-          <span className="t-label !text-fg2">Tilsyn</span>
-          <span data-num className={cn("font-mono text-[26px] font-semibold leading-none",
-                                       alert ? "text-crit" : "text-ja")}>
-            {row.attention}
+            ? <TriangleAlert size={18} className={statusTone} />
+            : <ShieldCheck size={18} className="text-ja" />}
+          <span className={cn("text-[19px] font-extrabold leading-none tracking-tight", statusTone)}>
+            {statusWord}
+          </span>
+          <span data-num title="Tilsyn-score (0–100) — sammensatt av avvik, terskelbrudd og flagg"
+                className="rounded bg-s3 px-1.5 py-[2px] font-mono text-[10px] text-fg3">
+            tilsyn {row.attention}
           </span>
         </div>
 
@@ -178,21 +190,34 @@ export function DossierFull({ personId }: { personId: string }) {
         <Metric label="Samtalekonvertering" value={`${n1(row.convRate)} %`} sub="ja ÷ pitchet" />
         <Metric label="Tempo" value={n1(row.pace)} sub="dører per aktiv time" />
         <Metric label="Fulle dager" value={`${n1(row.fullDayPct)} %`}
-                sub={`grense ${effective.fullDayDoors} dører`} />
+                sub={`grense ${Math.round(effective.fullDayDoors * (1 - DAY_TOLERANCE_PCT / 100))} dører`} />
       </div>
 
+      {/* ── primary trend: one clean, clickable chart ─────────────── */}
+      <div className="border-b border-line bg-s1 px-5 py-4">
+        <InteractiveTrend history={history} baseline={normal} initialDays={30} />
+      </div>
+
+      {/* ── everything else, collapsed by default ──────────────────── */}
+      <details className="group min-h-0 flex-1">
+        <summary className="flex cursor-pointer list-none items-center gap-2 border-b border-line bg-s1 px-5 py-3 text-[12px] font-medium text-fg2 transition-colors hover:text-fg1">
+          <ChevronRight size={14} className="flex-none transition-transform group-open:rotate-90" />
+          Avanserte detaljer
+          <span className="min-w-0 truncate font-mono text-[10.5px] text-fg3">puls · arbeidsvindu · avvik · terskelkjede · integritet</span>
+        </summary>
+
       {/* ── body: two regions, one full-height rule between them ── */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] xl:divide-x xl:divide-line">
+      <div className="grid min-h-0 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] xl:divide-x xl:divide-line">
         <div className="flex flex-col divide-y divide-line bg-s1">
-          <Panel title="Puls" sub="120 dager, én rute per dag" right={<DayLegend />}>
-            <PulseCalendar history={history} />
+          <Panel title="Puls" sub="120 dager mot egen normal">
+            <Pulse history={history} baseline={normal} />
           </Panel>
 
           <Panel title="Arbeidsvindu" sub="første til siste bank, opphold over 90 min utelatt"
                  right={<span data-num className="font-mono text-[11px] text-fg3">
                    teamets medianstart {hhmm(teamMedianStart)}
                  </span>}>
-            <Timeline rows={last14} median={teamMedianStart} />
+            <Timeline rows={last14} median={teamMedianStart} baseline={normal} />
           </Panel>
 
           <Panel title="Avvik fra egen normal"
@@ -282,6 +307,7 @@ export function DossierFull({ personId }: { personId: string }) {
           <div className="hidden flex-1 xl:block" />
         </div>
       </div>
+      </details>
     </div>
   );
 }
@@ -367,46 +393,13 @@ function Metric({
 }
 
 // ── charts ──────────────────────────────────────────────────────────────────
-/** Week-column calendar rather than one long ribbon — an operator scans for
- *  patterns by weekday, which a single wrapped strip destroys. */
-function PulseCalendar({ history }: { history: Array<{ day: string; dow: number; dayClass: DayClass; doors: number }> }) {
-  const weeks: Array<Array<{ day: string; dayClass: DayClass; doors: number } | null>> = [];
-  let cur: Array<{ day: string; dayClass: DayClass; doors: number } | null> = Array(7).fill(null);
-
-  for (const d of history) {
-    cur[d.dow] = { day: d.day, dayClass: d.dayClass, doors: d.doors };
-    if (d.dow === 6) { weeks.push(cur); cur = Array(7).fill(null); }
-  }
-  if (cur.some(Boolean)) weeks.push(cur);
-
-  const WD = ["m", "t", "o", "t", "f", "l", "s"];
-
-  return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
-      <div className="flex flex-none flex-col gap-[3px] pt-[1px]">
-        {WD.map((d, i) => (
-          <span key={i} className="h-[13px] font-mono text-[9px] leading-[13px] text-fg3">{d}</span>
-        ))}
-      </div>
-      <div className="flex gap-[3px]">
-        {weeks.map((w, wi) => (
-          <div key={wi} className="flex flex-col gap-[3px]">
-            {w.map((d, di) => (
-              <span key={di}
-                    title={d ? `${d.day} — ${DAY_LABEL[d.dayClass]} · ${d.doors} dører` : ""}
-                    className="h-[13px] w-[13px] rounded-[2px]"
-                    style={{ background: d ? DAY_COLOR[d.dayClass] : "transparent" }} />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Timeline({ rows, median }: {
-  rows: Array<{ day: string; doors: number; firstKnock: number; lastKnock: number; dayClass: DayClass }>;
+/** First-to-last knock per day against the team's median start.
+ *  Bars are coloured on the same own-normal scale the pulse uses, so a green bar
+ *  means the same thing in both panels. */
+function Timeline({ rows, median, baseline }: {
+  rows: Array<{ day: string; doors: number; firstKnock: number; lastKnock: number }>;
   median: number;
+  baseline: number;
 }) {
   const L = (h: number) => ((h - 14) / 7) * 100;
   return (
@@ -420,7 +413,8 @@ function Timeline({ rows, median }: {
                 <span className="absolute bottom-0 top-0 rounded-[3px]"
                       style={{ left: `${Math.max(0, L(d.firstKnock))}%`,
                                width: `${Math.max(1.5, L(d.lastKnock) - L(d.firstKnock))}%`,
-                               background: DAY_COLOR[d.dayClass], opacity: 0.9 }} />
+                               background: pulseFill(baseline > 0 ? d.doors / baseline : 1),
+                               opacity: 0.92 }} />
               )}
               <span className="absolute bottom-0 top-0 w-[1.5px] bg-fo" style={{ left: `${L(median)}%` }} />
             </span>

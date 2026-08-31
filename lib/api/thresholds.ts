@@ -30,6 +30,10 @@ export interface Threshold {
   affected: number;
 }
 
+/** A full day is `fullDayDoors` minus this tolerance — 80 × 0,8 = 64. Exported
+ *  so a label can never quote the raw knob while the maths uses the tolerated one. */
+export const DAY_TOLERANCE_PCT = 20;
+
 export const DEFAULTS = {
   minDoorsPerDay: 70, minDoorsPerWeek: 350, minYesRatePercent: 2, maxNoRatePercent: 50,
   minContactRatePercent: 60, consecutiveDaysThreshold: 3, performanceDropAlertPercent: 20,

@@ -11,7 +11,7 @@
  *  the two can never disagree about what "on Talkmore" means. */
 
 import { ORG } from "./org";
-import { campaignOf } from "./history";
+import { campaignOf, classify } from "./history";
 import { mulberry32, seedFrom } from "./rng";
 import type { DayRow } from "./history";
 
@@ -67,6 +67,9 @@ export function scopeRow(row: DayRow, personId: string, campaignId: string): Day
     ikkeHjemme: Math.round(row.ikkeHjemme * f),
     folgOpp: Math.round(row.folgOpp * f),
     activeMinutes: campaignMinutes(row, share),
+    // must be recomputed: leaving the all-campaign class on a rescaled row made
+    // the pulse square disagree with its own tooltip
+    dayClass: classify(doors),
   };
 }
 
