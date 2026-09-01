@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Radio, TriangleAlert } from "lucide-react";
 import { fetchDossier } from "@/lib/api/people";
-import { Avatar, DayStrip, Spark } from "./bits";
+import { Avatar, DayStrip } from "./bits";
+import { PeekTrend } from "./PeekTrend";
 import { useUi } from "@/lib/store/ui";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -90,7 +91,7 @@ export function DossierPeek({ personId }: { personId: string }) {
           <Peek label="Tempo" value={n1(row.pace)} sub="dører/time" />
         </div>
 
-        {/* one trend, at a readable size */}
+        {/* one trend — coloured bars vs own normal, hover for the day */}
         <div className="mt-5">
           <div className="flex items-baseline justify-between">
             <span className="t-label">Siste 30 dager</span>
@@ -99,9 +100,13 @@ export function DossierPeek({ personId }: { personId: string }) {
             </span>
           </div>
           <div className="mt-2 rounded-lg border border-line bg-s2 p-3">
-            <Spark values={last30.map((d) => d.doors)} w={330} h={64}
-                   color={dev.isAlert ? "var(--crit)" : "var(--iris)"}
-                   band={[dev.lowDayCutoff, dev.baseline]} />
+            <PeekTrend history={last30} baseline={dev.baseline} />
+            <div className="mt-2 flex items-center gap-3 font-mono text-[9.5px] text-fg3">
+              <span><i className="mr-1 inline-block h-2 w-2 rounded-[2px] align-middle" style={{ background: "var(--ja)" }} />over</span>
+              <span><i className="mr-1 inline-block h-2 w-2 rounded-[2px] align-middle" style={{ background: "var(--ih)" }} />under</span>
+              <span><i className="mr-1 inline-block h-2 w-2 rounded-[2px] align-middle" style={{ background: "var(--crit)" }} />langt under</span>
+              <span className="ml-auto">hold over en stolpe</span>
+            </div>
           </div>
         </div>
 
