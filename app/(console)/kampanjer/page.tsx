@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarRange, GitBranch } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
@@ -14,8 +15,16 @@ import { cn } from "@/lib/cn";
 const WD = ["man", "tir", "ons", "tor", "fre", "lør", "søn"];
 
 export default function KampanjerPage() {
+  const params = useSearchParams();
   const [selected, setSelected] = useState<string | null>(null);
   const [axis, setAxis] = useState<"kalender" | "livslop">("livslop");
+
+  // arriving from the dashboard's Kampanjehelse (?kampanje=…) drops us straight
+  // into that campaign's stats
+  useEffect(() => {
+    const k = params.get("kampanje");
+    if (k) setSelected(k);
+  }, [params]);
 
   const list = useQuery({ queryKey: ["campaign-list"], queryFn: fetchCampaignList });
   const detail = useQuery({

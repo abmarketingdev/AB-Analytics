@@ -35,6 +35,9 @@ export interface RosterRow {
    *  sitting in the breach registry — the two were reading different signals. */
   reasons: string[];
   doorsPerDay: number;
+  /** Own per-day normal, and the signed deviation from it (− below · + above). */
+  baseline: number;
+  deviationPct: number;
 }
 
 function stability(rows: DayRow[]) {
@@ -106,20 +109,29 @@ function buildRow(p: Person, campaignId = "all", limits: RowLimits = DEFAULTS): 
     deviationStreak: dev.streakLen,
     reasons,
     doorsPerDay: Number(perDay.toFixed(1)),
+    baseline: Number(dev.baseline.toFixed(1)),
+    deviationPct: dev.baseline > 0 ? Number(((perDay / dev.baseline - 1) * 100).toFixed(1)) : 0,
   };
 }
 
 export const fetchRoster = (chiefId = "all", campaignId = "all") =>
-  mockCall<RosterRow[]>(() =>
-    [...scaledPeople().values()]
+  mockCall<RosterRow[]>(() => {
+    const people = [...scaledPeople().values()]
       .filter((p) => p.role !== "chief")
-      .filter((p) => chiefId === "all" || p.chiefId === chiefId)
-      // `.map(buildRow)` would hand the array index in as campaignId
-      .map((p) => buildRow(p, campaignId))
-      // someone who never worked the selected campaign has no rows to show
-      .filter((r) => campaignId === "all" || r.doors > 0)
-      .sort((a, b) => b.attention - a.attention || b.doors - a.doors),
-  );
+      .filter((p) => chiefId === "all" || p.chiefId === chiefId);
+    // The campaign filter narrows WHO is shown (people who worked it) — but every
+    // figure stays the person's OVERALL daily performance. The krav (doors/day,
+    // ja-rate, avvik) are about a seller's day ACROSS campaigns; scoping them to
+    // one campaign collapsed everyone's volume below the 80-door krav and
+    // measured campaign-only doors against an all-campaign normal — so a campaign
+    // filter made the whole roster "bryter 2+ krav".
+    const members = campaignId === "all"
+      ? people
+      : people.filter((p) => buildRow(p, campaignId).doors > 0);
+    return members
+      .map((p) => buildRow(p, "all"))
+      .sort((a, b) => b.attention - a.attention || b.doors - a.doors);
+  });
 
 // ── dossier ─────────────────────────────────────────────────────────────────
 /** One rung of the admin's threshold hierarchy, with the knobs that actually get

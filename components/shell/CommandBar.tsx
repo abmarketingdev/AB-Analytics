@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Rows3, Rows4 } from "lucide-react";
 import { RadarBadge } from "@/components/brand/RadarMark";
-import { GlobalFilter } from "./GlobalFilter";
 import { useUi } from "@/lib/store/ui";
 import { clock } from "@/lib/format";
 import { getSession, signOut } from "@/lib/auth";
@@ -37,8 +36,6 @@ export function CommandBar() {
         <span className="text-[13px] font-extrabold tracking-[0.1em]">AB ANALYTICS</span>
         <span className="pulse-dot h-[6px] w-[6px] rounded-full bg-ja" aria-label="System online" />
       </div>
-
-      <GlobalFilter />
 
       <div className="ml-auto flex items-center gap-4 font-mono text-[11.5px] text-fg2">
         <span data-num suppressHydrationWarning>{now || "--:--:--"}</span>

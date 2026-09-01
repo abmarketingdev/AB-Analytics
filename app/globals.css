@@ -333,3 +333,65 @@ h1, h2, h3, h4 {
   .draw-line { stroke-dashoffset: 0; }
   .lift:hover { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   KOMMANDOSENTER — Claude Design port ("dc")
+   The redesigned command centre is a faithful port of the Claude
+   Design mockup. Its token system is SCOPED to `.dc` so the app's
+   other pages keep their own palette. Values, palettes and light
+   theme are copied verbatim from the mockup.
+   ═══════════════════════════════════════════════════════════════ */
+.dc {
+  --bg:#0b0b11; --panel:#14141d; --panel2:#1a1a25; --sunk:#0f0f17;
+  --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.14);
+  --tx:#f3f3f8; --tx2:#9a9aac; --tx3:#63637a;
+  --accent:#7c5cff; --accent2:#c4b0ff; --accentsoft:rgba(124,92,255,.16);
+  --pos:#3ddc97; --neg:#ff6b6b; --warn:#ffc043; --info:#5aa9ff; --pink:#ff7ab8;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.35);
+  color: var(--tx);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+.dc[data-theme="light"]{
+  --bg:#f2f2f6; --panel:#ffffff; --panel2:#fbfbfd; --sunk:#f1f1f6;
+  --line:rgba(12,12,26,.085); --line2:rgba(12,12,26,.16);
+  --tx:#14141d; --tx2:#5d5d70; --tx3:#8b8b9d;
+  --accent:#6338f0; --accent2:#9d7bff; --accentsoft:rgba(99,56,240,.10);
+  --pos:#0f9d63; --neg:#e04545; --warn:#c98200; --info:#2b74d6; --pink:#d94f92;
+  --shadow:0 1px 2px rgba(12,12,26,.05), 0 6px 18px rgba(12,12,26,.06);
+}
+.dc[data-palette="aurora"]{--accent:#1fb8a6;--accent2:#7ff0dc;--accentsoft:rgba(31,184,166,.16);--pos:#4ade80;--neg:#fb7185;--warn:#fbbf24;--info:#38bdf8;--pink:#e879f9}
+.dc[data-theme="light"][data-palette="aurora"]{--accent:#0d8f80;--accent2:#2fbfae;--accentsoft:rgba(13,143,128,.12);--pos:#0f9d63;--neg:#e11d48;--warn:#b97400;--info:#0284c7;--pink:#b524c6}
+.dc[data-palette="ember"]{--accent:#ff7a45;--accent2:#ffc39e;--accentsoft:rgba(255,122,69,.16);--pos:#5ccf8f;--neg:#ff5a5a;--warn:#ffc043;--info:#7dd3fc;--pink:#ff8fab}
+.dc[data-theme="light"][data-palette="ember"]{--accent:#d94f24;--accent2:#f97316;--accentsoft:rgba(217,79,36,.11);--pos:#0f9d63;--neg:#c62f2f;--warn:#a86800;--info:#0369a1;--pink:#c81e6a}
+.dc[data-palette="signal"]{--accent:#4c8dff;--accent2:#a9caff;--accentsoft:rgba(76,141,255,.16);--pos:#22c55e;--neg:#ef4444;--warn:#eab308;--info:#a78bfa;--pink:#f472b6}
+.dc[data-theme="light"][data-palette="signal"]{--accent:#1d4ed8;--accent2:#4c8dff;--accentsoft:rgba(29,78,216,.10);--pos:#15803d;--neg:#c62828;--warn:#8a6300;--info:#6d28d9;--pink:#c81e6a}
+
+.dc a{color:var(--accent);text-decoration:none}
+.dc a:hover{color:var(--accent2)}
+
+/* Mockup keyframes (scoped names distinct from the app's own) */
+@keyframes dc-pulse{0%{opacity:.9;transform:scale(1)}70%{opacity:0;transform:scale(2.8)}100%{opacity:0;transform:scale(2.8)}}
+@keyframes dc-rowIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes dc-barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes dc-barRise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes dc-tileIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@keyframes dc-dotIn{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+@keyframes dc-drawerIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes dc-scrimIn{from{opacity:0}to{opacity:1}}
+@keyframes dc-expandIn{from{opacity:0;max-height:0;transform:translateY(-8px)}to{opacity:1;max-height:520px;transform:none}}
+@keyframes dc-popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+@keyframes dc-feedIn{0%{opacity:0;transform:translateY(-16px);max-height:0}50%{opacity:1;max-height:40px}100%{opacity:1;transform:none;max-height:40px}}
+/* NB: no clip-path/overflow here — a persistent one would clip the filter
+   dropdowns that extend below the bar. Fade + slide only. */
+@keyframes dc-filterswap{0%{opacity:0;transform:translateY(-8px)}100%{opacity:1;transform:none}}
+@keyframes dc-viewin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* hover styling that the mockup expressed via `style-hover` */
+.dc-hover{transition:background-color .14s ease,color .14s ease,border-color .14s ease}
+.dc-hover:hover{background:var(--panel2)!important}
+.dc-hoverline:hover{color:var(--tx)!important;border-color:var(--line2)!important}
+.dc-liftrow:hover{background:var(--panel2)}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc *{animation-duration:.001ms!important;animation-iteration-count:1!important}
+}

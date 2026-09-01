@@ -106,6 +106,59 @@ export const fetchCurve = () =>
     return { points, nowIndex, total: doorsToday() };
   });
 
+// ── per-day doors over the period → the "Enkel" Dagsgraf ─────────────────────
+export interface DayBar {
+  label: string; short: string; doors: number; normal: number;
+  cls: "over" | "normal" | "under"; showLabel: boolean;
+}
+export interface Daily {
+  days: DayBar[]; normalDay: number; max: number; yTicks: number[];
+  total: number; totalNormal: number; deltaPct: number;
+}
+
+const NB_MONTHS = ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"];
+
+/** Doors per day across the trailing 30 days, each classified against its own
+ *  normal (±8 %). Deterministic, so bars never twitch between refreshes. */
+export const fetchDaily = (days = 30) =>
+  mockCall<Daily>(() => {
+    const normalDay = Math.round(TOTAL_DOORS / days / 0.98);
+    const rand = mulberry32(seedFrom("daily"));
+    const today = new Date();
+    const out: DayBar[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dow = d.getDay(); // 0 = Sun, 6 = Sat
+      const weekendScale = dow === 0 ? 0.55 : dow === 6 ? 0.68 : 1;
+      const mult = (0.86 + rand() * 0.28) * weekendScale;
+      const doors = Math.round(normalDay * mult);
+      const normal = Math.round(normalDay * weekendScale);
+      const ratio = doors / normal;
+      const cls = ratio > 1.08 ? "over" : ratio < 0.92 ? "under" : "normal";
+      const idx = days - 1 - i;
+      out.push({
+        label: `${d.getDate()}. ${NB_MONTHS[d.getMonth()]}`,
+        short: `${d.getDate()}.`,
+        doors, normal, cls,
+        showLabel: idx % 4 === (days - 1) % 4,
+      });
+    }
+    const peak = Math.max(...out.map((b) => Math.max(b.doors, b.normal)));
+    const max = Math.ceil((peak * 1.1) / 100) * 100;
+    const total = out.reduce((a, b) => a + b.doors, 0);
+    const totalNormal = out.reduce((a, b) => a + b.normal, 0);
+    return {
+      days: out,
+      normalDay,
+      max,
+      yTicks: [max, Math.round((max * 2) / 3), Math.round(max / 3), 0],
+      total,
+      totalNormal,
+      deltaPct: Math.round(((total - totalNormal) / totalNormal) * 100),
+    };
+  });
+
 // ── /api/dashboard/v2/campaign-health/ ──────────────────────────────────────
 export interface CampaignRow {
   id: string; name: string; color: string;

@@ -2,18 +2,26 @@
 
 import { create } from "zustand";
 import { ORG } from "@/lib/mock/org";
+import { REGIONS } from "@/lib/mock/regions";
 
 /** The global scope. Every data hook reads it; changing it refetches everything
  *  on screen. Mirrored into the URL so a view is a shareable link. */
 
 export const PERIODS = [
-  { value: "7d",  label: "7 dager",  days: 7 },
-  { value: "30d", label: "30 dager", days: 30 },
-  { value: "90d", label: "90 dager", days: 90 },
-  { value: "ytd", label: "I år",     days: 240 },
+  { value: "7d",  label: "7 dager",     days: 7 },
+  { value: "30d", label: "30 dager",    days: 30 },
+  { value: "90d", label: "90 dager",    days: 90 },
+  { value: "ytd", label: "I år",        days: 240 },
+  { value: "custom", label: "Egendefinert", days: 0 },
 ] as const;
 
 export type PeriodValue = (typeof PERIODS)[number]["value"];
+
+/** Field regions double as the "By/område" scope. */
+export const AREAS = [
+  { id: "all", name: "Alle byer" },
+  ...REGIONS.map((r) => ({ id: r.id, name: r.name })),
+];
 
 /** Placeholder roster until the mock world lands — brand colours match the spec. */
 export const CAMPAIGNS = [
@@ -44,38 +52,51 @@ export const teamsFor = (chiefId: string) =>
 
 interface FilterState {
   period: PeriodValue;
+  area: string;
   campaign: string;
   chief: string;
   team: string;
+  /** ISO yyyy-mm-dd — only meaningful when period === "custom". */
+  customFrom: string | null;
+  customTo: string | null;
   setPeriod: (v: PeriodValue) => void;
+  setArea: (v: string) => void;
   setCampaign: (v: string) => void;
   setChief: (v: string) => void;
   setTeam: (v: string) => void;
-  hydrate: (v: Partial<Pick<FilterState, "period" | "campaign" | "chief" | "team">>) => void;
+  setCustomRange: (from: string, to: string) => void;
+  hydrate: (v: Partial<Pick<FilterState, "period" | "area" | "campaign" | "chief" | "team" | "customFrom" | "customTo">>) => void;
 }
 
 export const useFilter = create<FilterState>((set) => ({
   period: "30d",
+  area: "all",
   campaign: "all",
   chief: "all",
   team: "all",
+  customFrom: null,
+  customTo: null,
   setPeriod: (period) => set({ period }),
+  setArea: (area) => set({ area }),
   setCampaign: (campaign) => set({ campaign }),
   // changing chief resets team — keeping a team that belongs to another chief
   // would silently show an empty result set
   setChief: (chief) => set({ chief, team: "all" }),
   setTeam: (team) => set({ team }),
+  setCustomRange: (customFrom, customTo) => set({ customFrom, customTo, period: "custom" }),
   hydrate: (v) => set(v),
 }));
 
 /** The status bar renders this verbatim — the operator always knows exactly
  *  which slice of data is on screen. */
-export function filterQuery(s: Pick<FilterState, "period" | "campaign" | "chief" | "team">) {
-  return `periode=${s.period} · kampanje=${s.campaign} · salgssjef=${s.chief} · team=${s.team}`;
+export function filterQuery(s: Pick<FilterState, "period" | "area" | "campaign" | "chief" | "team">) {
+  return `periode=${s.period} · by=${s.area} · kampanje=${s.campaign} · salgssjef=${s.chief} · team=${s.team}`;
 }
 
 export const periodLabel = (v: PeriodValue) =>
   PERIODS.find((p) => p.value === v)?.label ?? v;
+export const areaLabel = (id: string) =>
+  AREAS.find((a) => a.id === id)?.name ?? id;
 export const campaignLabel = (id: string) =>
   CAMPAIGNS.find((c) => c.id === id)?.name ?? id;
 export const teamLabel = (id: string) =>

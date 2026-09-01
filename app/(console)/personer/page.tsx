@@ -3,208 +3,209 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Search, SlidersHorizontal, TriangleAlert, WifiOff } from "lucide-react";
 import { fetchRoster, type RosterRow } from "@/lib/api/people";
-import { Avatar, DayStrip, Sev } from "@/components/personer/bits";
+import { sparkFor } from "@/lib/mock/world";
 import { useFilter } from "@/lib/store/filter";
-import { useUi } from "@/lib/store/ui";
-import { n, n1 } from "@/lib/format";
-import { cn } from "@/lib/cn";
+import { n, n1, pct } from "@/lib/format";
+import { spark } from "@/components/kommando/util";
 
-type SortKey = "attention" | "doors" | "jaRate" | "convRate" | "pace" | "stability" | "name";
-type Col = { key: SortKey; label: string; w: string; num?: boolean };
+const COLS = "250px 118px 1fr 96px 74px 132px 28px";
+type Sort = "avvik" | "doors" | "navn";
 
-/** At rest: name, a plain-language STATUS word, and two headline numbers. The
- *  expert columns (samtalekonvertering, tempo, stabilitet, the raw tilsyn score)
- *  are a data-scientist's view — they live behind "Avansert", off by default. */
-const BASE_COLS: Col[] = [
-  { key: "name", label: "Navn", w: "minmax(190px,1.4fr)" },
-  { key: "attention", label: "Status", w: "142px" },
-  { key: "doors", label: "Dører", w: "78px", num: true },
-  { key: "jaRate", label: "Ja-rate", w: "80px", num: true },
-];
-const ADV_COLS: Col[] = [
-  { key: "convRate", label: "Samtale", w: "82px", num: true },
-  { key: "pace", label: "Tempo", w: "78px", num: true },
-  { key: "stability", label: "Stab.", w: "68px", num: true },
-  { key: "attention", label: "Tilsyn", w: "66px", num: true },
-];
-
-/** Plain-language verdict — the same idea the dossier leads with, so a manager
- *  reads a word, not a bare 0–100 score. */
-function statusOf(r: RosterRow): { word: string; tone: string } {
-  if (r.attention >= 50 || r.reasons.length >= 2) return { word: "Trenger oppfølging", tone: "bg-nei/16 text-nei" };
-  if (r.tenureWeeks <= 2) return { word: "Ny", tone: "bg-s3 text-fg2" };
-  if (r.attention >= 25 || r.flag || r.reasons.length > 0) return { word: "Følg med", tone: "bg-warn/16 text-warn" };
-  return { word: "På sporet", tone: "bg-ja/16 text-ja" };
+/** Count of the 4 company krav a person currently meets. */
+function kravMet(r: RosterRow) {
+  return (r.doorsPerDay >= 80 ? 1 : 0) + (r.jaRate >= 2.5 ? 1 : 0) +
+    (r.contactRate >= 60 ? 1 : 0) + (Math.abs(r.deviationPct) <= 35 ? 1 : 0);
 }
+function statusOf(met: number) {
+  if (met === 4) return { word: "Alle krav oppfylt", color: "var(--pos)", bg: "rgba(61,220,151,.14)" };
+  if (met === 3) return { word: "Følg med", color: "var(--warn)", bg: "rgba(255,192,67,.13)" };
+  return { word: "Trenger oppfølging", color: "var(--neg)", bg: "rgba(255,107,107,.13)" };
+}
+const devColor = (d: number) => (d >= 0 ? "var(--pos)" : d < -35 ? "var(--neg)" : "var(--warn)");
 
+const HEAD: React.CSSProperties = {
+  display: "grid", gridTemplateColumns: COLS, gap: 14, alignItems: "center", padding: "11px 18px",
+  borderBottom: "1px solid var(--line)", font: "500 9.5px/1 'IBM Plex Sans', sans-serif",
+  letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)",
+};
+
+/** AB Personer — the roster, a faithful port of the Claude Design list view.
+ *  A row opens the person's profile, carrying the dashboard's date+campaign. */
 export default function PersonerPage() {
-  const chief = useFilter((s) => s.chief);
-  const campaign = useFilter((s) => s.campaign);
   const router = useRouter();
-  const openDrawer = useUi((s) => s.openDrawer);
-  const [q, setQ] = useState("");
-  const [role, setRole] = useState<"alle" | "seller" | "leader">("alle");
-  const [only, setOnly] = useState<"alle" | "varsel" | "pålogget">("alle");
-  const [sort, setSort] = useState<SortKey>("attention");
-  const [advanced, setAdvanced] = useState(false);
+  const { period, campaign, chief, customFrom, customTo } = useFilter();
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<Sort>("avvik");
+  const [visible, setVisible] = useState(40);
 
-  const cols = advanced ? [...BASE_COLS, ...ADV_COLS] : BASE_COLS;
-  const grid = cols.map((c) => c.w).join(" ") + " 150px";
+  const roster = useQuery({ queryKey: ["roster", chief, campaign], queryFn: () => fetchRoster(chief, campaign) });
+  const rows = roster.data ?? [];
 
-  const roster = useQuery({
-    queryKey: ["roster", chief, campaign],
-    queryFn: () => fetchRoster(chief, campaign),
-  });
+  const openProfile = (id: string) => {
+    const sp = new URLSearchParams();
+    if (period !== "30d") sp.set("periode", period);
+    if (campaign !== "all") sp.set("kampanje", campaign);
+    if (period === "custom" && customFrom && customTo) { sp.set("fra", customFrom); sp.set("til", customTo); }
+    const qs = sp.toString();
+    router.push(`/personer/${id}${qs ? `?${qs}` : ""}`);
+  };
 
-  const rows = useMemo(() => {
-    let r = roster.data ?? [];
-    const needle = q.trim().toLowerCase();
-    if (needle) r = r.filter((x) => x.name.toLowerCase().includes(needle) || x.abId.includes(needle));
-    if (role !== "alle") r = r.filter((x) => x.role === role);
-    if (only === "varsel") r = r.filter((x) => x.flag || x.attention >= 40);
-    if (only === "pålogget") r = r.filter((x) => x.online);
-    return [...r].sort((a, b) =>
-      sort === "name" ? a.name.localeCompare(b.name, "nb") : (b[sort] as number) - (a[sort] as number),
-    );
-  }, [roster.data, q, role, only, sort]);
-
-  const agg = useMemo(() => {
-    if (!rows.length) return null;
-    return {
-      doors: rows.reduce((a, x) => a + x.doors, 0),
-      ja: rows.reduce((a, x) => a + x.ja, 0),
-      flagged: rows.filter((x) => x.attention >= 40).length,
-      online: rows.filter((x) => x.online).length,
-    };
+  // summary band
+  const summary = useMemo(() => {
+    const people = rows.length || 0;
+    const online = rows.filter((r) => r.online).length;
+    const doors = rows.reduce((a, r) => a + r.doors, 0);
+    const ja = rows.reduce((a, r) => a + r.ja, 0);
+    const perDay = people ? rows.reduce((a, r) => a + r.doorsPerDay, 0) / people : 0;
+    let b2 = 0, b1 = 0, b0 = 0;
+    rows.forEach((r) => { const broken = 4 - kravMet(r); if (broken >= 2) b2++; else if (broken === 1) b1++; else b0++; });
+    return { people, online, doors, ja, jaRate: doors ? (ja / doors) * 100 : 0, perDay, b2, b1, b0 };
   }, [rows]);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? rows.filter((r) => `${r.name} ${r.teamName} ${r.chiefName} ${r.campaignName}`.toLowerCase().includes(q))
+      : rows;
+    const sorted = [...list];
+    if (sort === "avvik") sorted.sort((a, b) => a.deviationPct - b.deviationPct);
+    else if (sort === "doors") sorted.sort((a, b) => b.doors - a.doors);
+    else sorted.sort((a, b) => a.name.localeCompare(b.name, "nb"));
+    return sorted;
+  }, [rows, query, sort]);
+
+  const shown = filtered.slice(0, visible);
+  const bands = [
+    { n: summary.b2, label: "Bryter 2+ krav", bg: "rgba(255,107,107,.16)", fg: "var(--neg)", dot: "var(--neg)", flex: Math.max(1, summary.b2) },
+    { n: summary.b1, label: "1 krav brutt", bg: "rgba(255,192,67,.16)", fg: "var(--warn)", dot: "var(--warn)", flex: Math.max(1, summary.b1) },
+    { n: summary.b0, label: "Alle krav oppfylt", bg: "rgba(61,220,151,.16)", fg: "var(--pos)", dot: "var(--pos)", flex: Math.max(1, summary.b0) },
+  ];
+
   return (
-    <div className="flex h-full min-h-0">
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* toolbar */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
-          <label className="flex h-8 items-center gap-2 rounded-md border border-line2 bg-s2 px-2.5">
-            <Search size={13} className="text-fg3" />
-            <input
-              value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder="Søk navn eller ansattnr…"
-              className="w-[200px] bg-transparent text-[12.5px] outline-none placeholder:text-fg3"
-            />
-          </label>
+    <div className="dc" data-theme="dark" data-palette="violet" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14, background: "var(--bg)", minHeight: "100%", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
 
-          <Seg value={role} onChange={setRole}
-               opts={[["alle", "Alle"], ["seller", "Selgere"], ["leader", "Ledere"]]} />
-          <Seg value={only} onChange={setOnly}
-               opts={[["alle", "Alle"], ["varsel", "Varsel"], ["pålogget", "Pålogget"]]} />
+      {/* summary band */}
+      <section style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1.4fr", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", overflow: "hidden" }}>
+        <SumCell label="Personer" value={n(summary.people)} suffix="i utvalget" sub={`${n(summary.online)} pålogget nå`} />
+        <SumCell label="Dører" value={n(summary.doors)} sub={`${n1(summary.perDay)} per person/dag`} />
+        <SumCell label="Ja-rate" value={pct(summary.jaRate)} valueColor="var(--pos)" sub="normalt 3,1 %" />
+        <div style={{ padding: "16px 20px" }}>
+          <div style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)" }}>Fordeling etter krav</div>
+          <div style={{ display: "flex", gap: 3, height: 30, marginTop: 11 }}>
+            {bands.map((b) => (
+              <div key={b.label} style={{ flex: b.flex, borderRadius: 7, background: b.bg, color: b.fg, display: "grid", placeItems: "center", font: "600 11px 'IBM Plex Mono', monospace" }}>{b.n}</div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 14, marginTop: 10, font: "400 11px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
+            {bands.map((b) => (
+              <span key={b.label} style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 3, background: b.dot }} />{b.label}</span>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          <button type="button" onClick={() => setAdvanced((v) => !v)}
-                  title="Vis samtalekonvertering, tempo, stabilitet og tilsyn-score"
-                  className={cn("flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11.5px] transition-colors",
-                                advanced ? "border-iris bg-iris/15 text-iris-soft" : "border-line2 bg-s2 text-fg3 hover:text-fg2")}>
-            <SlidersHorizontal size={12} /> Avansert
-          </button>
-
-          {agg && (
-            <span data-num className="ml-auto font-mono text-[11px] text-fg3">
-              {n(rows.length)} personer · {n(agg.doors)} dører · {n1((agg.ja / (agg.doors || 1)) * 100)} % ja ·{" "}
-              <span className="text-crit">{agg.flagged} trenger oppfølging</span>
-            </span>
-          )}
+      {/* table */}
+      <section style={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid var(--line)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, height: 34, padding: "0 12px", borderRadius: 10, background: "var(--sunk)", border: "1px solid var(--line)", minWidth: 280 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <input value={query} onChange={(e) => { setQuery(e.target.value); setVisible(40); }} placeholder="Søk navn, team eller kampanje"
+                   style={{ flex: 1, border: 0, background: "transparent", outline: "none", color: "var(--tx)", font: "400 12.5px 'IBM Plex Sans', sans-serif" }} />
+          </div>
+          <div style={{ display: "flex", padding: 3, borderRadius: 10, background: "var(--sunk)", border: "1px solid var(--line)" }}>
+            {([["avvik", "Avvik"], ["doors", "Dører"], ["navn", "Navn"]] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setSort(k)} style={{ height: 26, padding: "0 11px", border: 0, borderRadius: 7, cursor: "pointer", font: "500 11.5px 'IBM Plex Sans', sans-serif", background: sort === k ? "var(--accent)" : "transparent", color: sort === k ? "#fff" : "var(--tx2)" }}>{l}</button>
+            ))}
+          </div>
+          <div style={{ flex: 1 }} />
+          <span style={{ font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>{n(Math.min(visible, filtered.length))} av {n(filtered.length)} vist</span>
         </div>
 
-        {/* header */}
-        <div className="grid items-center gap-3 border-b border-line px-4 py-1.5" style={{ gridTemplateColumns: grid }}>
-          {cols.map((c) => (
-            <button key={c.label} type="button" onClick={() => setSort(c.key)}
-                    className={cn("t-label cursor-pointer text-left hover:text-fg2", c.num && "text-right",
-                                  sort === c.key && "text-iris-soft")}>
-              {c.label}
+        <div style={HEAD}>
+          <span>Navn</span><span>Status</span><span>Mot egen normal</span>
+          <span style={{ textAlign: "right" }}>Dører</span><span style={{ textAlign: "right" }}>Ja-rate</span>
+          <span style={{ textAlign: "center" }}>30 dager</span><span />
+        </div>
+
+        {roster.isPending && <div style={{ padding: 40, textAlign: "center", color: "var(--tx3)", font: "400 12px 'IBM Plex Sans', sans-serif" }}>Laster…</div>}
+        {shown.map((r, i) => {
+          const met = kravMet(r);
+          const st = statusOf(met);
+          const dev = Math.round(r.deviationPct);
+          const dc = devColor(dev);
+          const half = Math.min(48, Math.abs(dev));
+          const circ = 94.2;
+          const sp = spark(sparkFor(r.id), 132, 30, 3);
+          return (
+            <div key={r.id} onClick={() => openProfile(r.id)} className="dc-hover"
+                 style={{ position: "relative", display: "grid", gridTemplateColumns: COLS, gap: 14, alignItems: "center", padding: "10px 18px", borderBottom: "1px solid var(--line)", cursor: "pointer", animation: "dc-rowIn .34s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${Math.min(i, 20) * 18}ms` }}>
+              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: st.color }} />
+              {/* name + ring avatar */}
+              <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
+                <div style={{ position: "relative", width: 34, height: 34, flex: "none" }}>
+                  <svg viewBox="0 0 34 34" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
+                    <circle cx="17" cy="17" r="15" fill="none" stroke="var(--sunk)" strokeWidth="3" />
+                    <circle cx="17" cy="17" r="15" fill="none" stroke={st.color} strokeWidth="3" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ * (1 - met / 4)} style={{ transition: "stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1)" }} />
+                  </svg>
+                  <span style={{ position: "absolute", inset: 4, borderRadius: "50%", background: "var(--panel2)", display: "grid", placeItems: "center", font: "600 10px 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{r.initials}</span>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ font: "600 12.5px/1.2 'IBM Plex Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</span>
+                    {!r.online && <span title="frakoblet" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--tx3)", flex: "none" }} />}
+                  </div>
+                  <div style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", marginTop: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {r.chiefName.split(" ")[0]} · {r.teamName} · {r.campaignName}
+                  </div>
+                </div>
+              </div>
+              {/* status */}
+              <div style={{ justifySelf: "start", display: "flex", flexDirection: "column", gap: 5 }}>
+                <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "5px 9px", borderRadius: 7, background: st.bg, color: st.color, whiteSpace: "nowrap" }}>{st.word}</span>
+                <span style={{ font: "400 9.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", paddingLeft: 2 }}>{met}/4 krav</span>
+              </div>
+              {/* deviation vs own normal */}
+              <div style={{ position: "relative", height: 22, display: "flex", alignItems: "center" }}>
+                <div style={{ position: "absolute", left: 0, right: 0, height: 8, borderRadius: 4, background: "var(--sunk)" }} />
+                <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "var(--line2)" }} />
+                <div style={{ position: "absolute", height: 8, borderRadius: 4, left: dev < 0 ? `${50 - half}%` : "50%", width: `${half}%`, background: dc, transformOrigin: dev < 0 ? "right" : "left", animation: "dc-barGrow .5s cubic-bezier(.2,.8,.2,1) both" }} />
+                <span style={{ position: "absolute", right: 0, transform: "translateY(-15px)", font: "600 10.5px/1 'IBM Plex Mono', monospace", color: dc }}>{dev >= 0 ? "+" : "−"}{Math.abs(dev)} %</span>
+              </div>
+              <span style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace" }}>{n(r.doors)}</span>
+              <span style={{ textAlign: "right", font: "500 12px/1 'IBM Plex Mono', monospace", color: r.jaRate >= 2.5 ? "var(--pos)" : "var(--tx2)" }}>{pct(r.jaRate)}</span>
+              <svg viewBox="0 0 132 30" preserveAspectRatio="none" style={{ width: 132, height: 30, display: "block", color: dc }}>
+                <path d={sp.area} fill="currentColor" opacity="0.13" />
+                <path d={sp.line} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                <line x1="0" y1="15" x2="132" y2="15" stroke="var(--tx3)" strokeWidth="1" strokeDasharray="3 3" opacity=".55" />
+              </svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2.5" style={{ justifySelf: "center" }}><path d="M9 6l6 6-6 6" /></svg>
+            </div>
+          );
+        })}
+
+        {visible < filtered.length && (
+          <div style={{ padding: "12px 18px" }}>
+            <button onClick={() => setVisible((v) => v + 40)} className="dc-hoverline"
+                    style={{ width: "100%", height: 36, borderRadius: 10, border: "1px dashed var(--line2)", background: "transparent", color: "var(--tx2)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer", transition: "color .14s ease, border-color .14s ease" }}>
+              Vis {Math.min(40, filtered.length - visible)} til
             </button>
-          ))}
-          <span className="t-label">30 dager</span>
-        </div>
-
-        {/* rows */}
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {roster.isPending && <div className="m-4 h-40 animate-pulse rounded-lg bg-s1" />}
-          {roster.isError && <p className="p-4 text-[13px] text-nei">Kunne ikke hente listen.</p>}
-
-          {rows.map((r, i) => {
-            const st = statusOf(r);
-            return (
-            <button
-              key={r.id} type="button"
-              style={{ gridTemplateColumns: grid, height: "var(--row-h)", animationDelay: `${Math.min(i, 18) * 16}ms` }}
-              onClick={() => router.push(`/personer/${r.id}`)}
-              onAuxClick={(e) => { if (e.button === 1) openDrawer(r.id); }}
-              title="Åpne full profil — midtklikk for hurtigvisning"
-              className={cn(
-                "row-in grid w-full items-center gap-3 border-b border-line px-4 text-left transition-colors hover:bg-s2",
-              )}
-            >
-              <span className="flex min-w-0 items-center gap-2.5">
-                <Avatar initials={r.initials} size={24} />
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5">
-                    <span className="truncate text-[12.5px] font-medium">{r.name}</span>
-                    {r.flag && <TriangleAlert size={10} className="flex-none text-warn" />}
-                    {!r.online && <WifiOff size={10} className="flex-none text-fg3" />}
-                  </span>
-                  <span className="block truncate font-mono text-[9.5px] text-fg3">
-                    {r.teamName} · {r.campaignName}
-                  </span>
-                </span>
-              </span>
-
-              <span>
-                <span className={cn("inline-flex items-center rounded-full px-2 py-[3px] text-[10.5px] font-semibold", st.tone)}>
-                  {st.word}
-                </span>
-              </span>
-
-              <Num v={n(r.doors)} />
-              <Num v={`${n1(r.jaRate)}`} tone={r.jaRate < 2 ? "text-nei" : r.jaRate >= 3.5 ? "text-ja" : undefined} />
-
-              {advanced && <>
-                <Num v={`${n1(r.convRate)}`} />
-                <Num v={n1(r.pace)} />
-                <Num v={n1(r.stability)} />
-                <span className="justify-self-end"><Sev n={r.attention} /></span>
-              </>}
-
-              <span className="overflow-hidden"><DayStrip days={r.strip} size={4} /></span>
-            </button>
-            );
-          })}
-
-          {!roster.isPending && rows.length === 0 && (
-            <p className="p-8 text-center text-[13px] text-fg3">Ingen treff.</p>
-          )}
-        </div>
-      </div>
-
+          </div>
+        )}
+      </section>
     </div>
   );
 }
 
-function Num({ v, tone }: { v: string; tone?: string }) {
-  return <span data-num className={cn("justify-self-end text-[12px] text-fg1", tone)}>{v}</span>;
-}
-
-function Seg<T extends string>({ value, onChange, opts }: {
-  value: T; onChange: (v: T) => void; opts: Array<[T, string]>;
-}) {
+function SumCell({ label, value, suffix, sub, valueColor }: { label: string; value: string; suffix?: string; sub: string; valueColor?: string }) {
   return (
-    <div className="flex gap-0 rounded-md bg-s2 p-[3px]">
-      {opts.map(([v, label]) => (
-        <button key={v} type="button" onClick={() => onChange(v)}
-                className={cn("cursor-pointer rounded-[5px] px-2.5 py-1 text-[11.5px] transition-colors",
-                              value === v ? "bg-iris font-semibold text-white" : "text-fg3 hover:text-fg2")}>
-          {label}
-        </button>
-      ))}
+    <div style={{ padding: "16px 20px", borderRight: "1px solid var(--line)" }}>
+      <div style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)" }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 9 }}>
+        <span style={{ font: "600 30px/1 'IBM Plex Mono', monospace", color: valueColor ?? "var(--tx)" }}>{value}</span>
+        {suffix && <span style={{ font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>{suffix}</span>}
+      </div>
+      <div style={{ marginTop: 10, font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{sub}</div>
     </div>
   );
 }
