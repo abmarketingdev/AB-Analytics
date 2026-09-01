@@ -48,7 +48,8 @@ export function ActionHero({ items }: { items: Attention[] }) {
                   {a.why}
                 </span>
               </span>
-              <span data-num className={`ml-auto text-[15px] font-semibold ${lit ? "text-[#5B3FD9]" : "text-white"}`}>
+              <span data-num title="Hastegrad (0–100)"
+                    className={`ml-auto shrink-0 rounded-md px-1.5 py-[2px] text-[10.5px] font-semibold ${lit ? "bg-[#5B3FD9]/12 text-[#5B3FD9]" : "bg-white/15 text-white/80"}`}>
                 {a.score}
               </span>
             </button>
@@ -57,7 +58,7 @@ export function ActionHero({ items }: { items: Attention[] }) {
       </div>
 
       <div className="relative mt-auto pt-3.5 text-[11px] text-white/70">
-        {rest > 0 ? `+ ${rest} til · ` : ""}rangert etter avviksserie × underskudd
+        {rest > 0 ? `+ ${rest} til · ` : ""}hvem som trenger deg mest
       </div>
     </div>
   );

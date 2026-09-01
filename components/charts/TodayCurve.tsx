@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useRef, useState } from "react";
 import type { CurvePoint } from "@/lib/api/dashboard";
 import { n } from "@/lib/format";
 
@@ -9,6 +9,8 @@ import { n } from "@/lib/format";
  *  which is the whole point of putting it at the top of the screen. */
 export function TodayCurve({ points, nowIndex }: { points: CurvePoint[]; nowIndex: number }) {
   const gid = useId().replace(/:/g, "");
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<number | null>(null);
   const W = 620, H = 190, PAD_B = 22;
 
   if (!points.length) return null;
@@ -45,7 +47,33 @@ export function TodayCurve({ points, nowIndex }: { points: CurvePoint[]; nowInde
         </span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block min-h-0 w-full flex-1"
+      <div
+        ref={wrapRef}
+        className="relative min-h-0 w-full flex-1"
+        onMouseMove={(e) => {
+          const el = wrapRef.current; if (!el) return;
+          const r = el.getBoundingClientRect();
+          const frac = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+          setHover(Math.round(frac * (points.length - 1)));
+        }}
+        onMouseLeave={() => setHover(null)}
+      >
+        {hover != null && (() => {
+          const hp = points[hover];
+          const isToday = hover <= nowIndex;
+          const hv = isToday ? hp.today : hp.median;
+          return (
+            <div
+              className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-line2 bg-s2/95 px-2 py-1 font-mono text-[10.5px] shadow-lg"
+              style={{ left: `${(hover / (points.length - 1)) * 100}%` }}
+            >
+              <span className="text-fg1">kl. {hp.t}</span>{" "}
+              <span data-num className="text-iris-soft">{hv == null ? "—" : n(hv)}</span>
+              <span className="text-fg3"> {isToday ? "i dag" : "median"}</span>
+            </div>
+          );
+        })()}
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-full w-full"
            role="img" aria-label={`Dører i dag: ${n(head?.today ?? 0)}`}>
         <defs>
           <linearGradient id={`g${gid}`} x1="0" y1="0" x2="0" y2="1">
@@ -74,7 +102,23 @@ export function TodayCurve({ points, nowIndex }: { points: CurvePoint[]; nowInde
             <circle cx={x(nowIndex)} cy={headY} r="2" fill="#fff" />
           </>
         )}
+
+        {hover != null && hover !== nowIndex && (() => {
+          const isToday = hover <= nowIndex;
+          const hv = isToday ? points[hover].today : points[hover].median;
+          return (
+            <>
+              <line x1={x(hover)} x2={x(hover)} y1="0" y2={H - PAD_B}
+                    stroke="var(--fg2)" strokeOpacity="0.35" strokeDasharray="3 3" />
+              {hv != null && (
+                <circle cx={x(hover)} cy={y(hv)} r="4"
+                        fill="var(--iris-soft)" stroke="var(--canvas)" strokeWidth="1.5" />
+              )}
+            </>
+          );
+        })()}
       </svg>
+      </div>
 
       <div className="mt-1.5 flex justify-between font-mono text-[10px] text-fg3">
         {["14", "15", "16", "17", "18", "19", "20", "21"].map((h) => <span key={h}>{h}</span>)}

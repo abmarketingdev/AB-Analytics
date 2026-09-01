@@ -45,25 +45,30 @@ export const fetchStats = () =>
   mockCall<Stats>(() => {
     const doors = doorsToday();
     const ja = Math.round(doors * 0.033);
-    // Derived from the org, never hardcoded — a headline that disagrees with the
-    // hierarchy underneath it is exactly how a dashboard loses trust.
+    // EVERY figure is derived from the seeded org — never hardcoded. A headline that
+    // disagrees with the hierarchy underneath it is exactly how a dashboard loses
+    // trust; invented deltas/pills are the fastest way to lose it. No same-time-
+    // yesterday exists in the seed, so the deltas are 0 (not rendered).
     const c = orgCounts();
+    const people = [...scaledPeople().values()].filter((p) => p.role !== "chief");
+    const nn = people.length || 1;
+    const dc = (k: DayClass) => people.filter((p) => p.dayClass === k).length;
     return {
       doors_today: doors,
-      doors_delta_pct: 12.7,
+      doors_delta_pct: 0,
       ja_today: ja,
-      ja_rate_today: 3.3,
-      ja_delta_pp: 0.4,
+      ja_rate_today: doors ? Number(((ja / doors) * 100).toFixed(1)) : 0,
+      ja_delta_pp: 0,
       online_now: c.online,
       headcount: c.headcount,
-      open_alerts: 7,
-      alerts_delta: 2,
+      open_alerts: people.filter((p) => p.flag).length,
+      alerts_delta: 0,
       teams: c.teams,
       campaigns: CAMPAIGNS.length,
       period_doors: TOTAL_DOORS,
-      under_threshold: 12,
-      full_day_pct: 61,
-      no_gps: 4,
+      under_threshold: dc("under"),
+      full_day_pct: Math.round((dc("full") / nn) * 100),
+      no_gps: people.filter((p) => p.flag === "no_gps").length,
     };
   });
 
