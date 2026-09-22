@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, RotateCw, X, XCircle } from "lucide-react";
 import { Avatar } from "@/components/personer/bits";
@@ -104,7 +105,7 @@ function Row({ m, i, active, onClick }: { m: MailRow; i: number; active: boolean
         {m.teamCount === 0 && m.flaggedCount === 0 && "—"}
       </span>
       <span className={cn("flex items-center justify-end gap-1.5 text-[11px]", failed ? "text-crit" : "text-ja")}>
-        {failed ? <XCircle size={11} /> : <CheckCircle2 size={11} />}
+        {failed ? <XCircle size={12} /> : <CheckCircle2 size={12} />}
         {failed ? "Feilet" : "Sendt"}
       </span>
     </button>
@@ -126,7 +127,7 @@ function Detail({ id, onClose }: { id: string; onClose: () => void }) {
   const q = useQuery({ queryKey: ["mail-detail", id], queryFn: () => fetchMailDetail(id) });
 
   if (q.isPending) return <div className="h-64 animate-pulse rounded-lg bg-s2" />;
-  if (q.isError || !q.data) return <p className="text-[12.5px] text-nei">Kunne ikke hente detaljer.</p>;
+  if (q.isError || !q.data) return <ErrorState what="detaljene" onRetry={() => q.refetch()} compact />;
 
   const d = q.data;
   const failed = d.status === "failed";
@@ -137,7 +138,7 @@ function Detail({ id, onClose }: { id: string; onClose: () => void }) {
         <span className={cn("text-[12.5px] font-semibold", KIND_TONE[d.kind])}>{d.kindLabel}</span>
         <button type="button" onClick={onClose}
                 className="ml-auto cursor-pointer text-fg3 hover:text-fg1" aria-label="Lukk">
-          <X size={14} />
+          <X size={16} />
         </button>
       </div>
 
@@ -185,9 +186,9 @@ function Detail({ id, onClose }: { id: string; onClose: () => void }) {
                   className="lift flex cursor-pointer flex-col gap-2 rounded-lg border border-warn/30 bg-warn/6 px-3 py-2.5 text-left hover:border-warn/60"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Avatar initials={f.name.split(" ").map((x) => x[0]).join("").slice(0, 2)} size={24} />
+                    <Avatar initials={f.name.split(" ").map((x) => x[0]).join("").slice(0, 2)} size={16} />
                     <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{f.name}</span>
-                    <span data-num className="font-mono text-[13px] font-bold text-crit">−{n1(f.shortfallPct)} %</span>
+                    <span data-num className="font-mono text-[13px] font-bold text-crit">−{n1(f.shortfallPct)} %</span>
                   </div>
 
                   {/* the evidence that put them in the email */}

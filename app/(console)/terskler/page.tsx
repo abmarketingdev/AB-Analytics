@@ -91,9 +91,9 @@ export default function TersklerPage() {
         </span>
 
         <button type="button" onClick={() => setSimOpen((v) => !v)}
-                className={cn("ml-auto flex cursor-pointer items-center gap-2 rounded-md px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
+                className={cn("toolbar-end ml-auto flex cursor-pointer items-center gap-2 rounded-md px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
                               simOpen ? "bg-iris text-white" : "border border-line2 text-fg2 hover:text-fg1")}>
-          <FlaskConical size={14} /> Hva-hvis
+          <FlaskConical size={16} /> Hva-hvis
         </button>
       </div>
 
@@ -231,16 +231,16 @@ export default function TersklerPage() {
                         <span className="min-w-0">
                           <span className="block truncate text-[12.5px] font-semibold">
                             {b.name}
-                            <span className="ml-1.5 font-mono text-[10px] font-normal text-fg3">
+                            <span className="meta-own-line ml-1.5 font-mono text-[10.5px] font-normal text-fg3">
                               {b.abId} · {b.teamName}
                             </span>
                           </span>
-                          <span className="block truncate text-[11px] text-fg2">{b.message}</span>
+                          <span className="wrap-sm block truncate text-[11px] text-fg2">{b.message}</span>
                         </span>
                         <span className={cn("rounded-md border px-2 py-[2px] text-[9.5px] font-semibold uppercase tracking-wider", SEV[b.severity].cls)}>
                           {SEV[b.severity].label}
                         </span>
-                        <ChevronDown size={13} className={cn("text-fg3 transition-transform", isOpen && "rotate-180")} />
+                        <ChevronDown size={16} className={cn("text-fg3 transition-transform", isOpen && "rotate-180")} />
                       </button>
 
                       {isOpen && (
@@ -256,7 +256,7 @@ export default function TersklerPage() {
                                          style={{ bottom: `${Math.min(100, (b.thresholdValue / max) * 100)}%` }} />
                                     <div className="grow-bar absolute bottom-0 left-0 right-0 rounded-sm"
                                          style={{ height: `${(e.doors / max) * 100}%`,
-                                                  background: e.low ? "var(--crit)" : "var(--ja)",
+                                                  background: e.low ? "var(--crit)" : "var(--ok)",
                                                   opacity: e.low ? 1 : 0.55,
                                                   animationDelay: `${b.evidence.indexOf(e) * 45}ms` }} />
                                   </div>
@@ -295,7 +295,7 @@ export default function TersklerPage() {
       {/* deviation streaks */}
       <Card>
         <CardHead title="Avvik fra egen normal" sub="sammenlignet med personen selv, ikke en fast linje"
-                  right={<TriangleAlert size={13} className="text-warn" />} />
+                  right={<TriangleAlert size={16} className="text-warn" />} />
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {(devs.data ?? []).slice(0, 6).map((d) => (
             <DevCard key={d.personId} d={d} />
@@ -327,7 +327,7 @@ function DevCard({ d }: { d: { personId: string; name: string; initials: string;
       <div className="flex items-center gap-2.5">
         <Avatar initials={d.initials} size={26} />
         <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold">{d.name}</span>
-        <span data-num className="font-mono text-[13px] font-bold text-crit">−{n1(d.shortfallPct)} %</span>
+        <span data-num className="font-mono text-[13px] font-bold text-crit">−{n1(d.shortfallPct)} %</span>
       </div>
       <div className="flex items-end gap-1">
         {d.streakDays.map((s) => (

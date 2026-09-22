@@ -151,7 +151,7 @@ function TrendTip({ active, payload }: any) {
       <div className="text-fg1">{p.day}</div>
       <div className="text-fg3">
         <span data-num className="text-fg1">{p.doors}</span> dører ·{" "}
-        <span data-num className="text-ja">{n1(p.jaRate)} %</span> ja
+        <span data-num className="text-ja">{n1(p.jaRate)} %</span> ja
       </div>
     </div>
   );
@@ -175,9 +175,9 @@ function DayDetail({ p, baseline, onClose }: { p: Pt; baseline: number; onClose:
         <span
           data-num
           className={cn("rounded px-1.5 py-[1px] font-mono text-[10px]",
-                        vsNormal >= 0 ? "bg-ja/18 text-ja" : "bg-nei/18 text-nei")}
+                        vsNormal >= 0 ? "bg-ja/18 text-ja" : "bg-crit/18 text-crit")}
         >
-          {vsNormal >= 0 ? "+" : "−"}{Math.abs(vsNormal)} % mot normal
+          {vsNormal >= 0 ? "+" : "−"}{Math.abs(vsNormal)} % mot normal
         </span>
         <button
           type="button" onClick={onClose}

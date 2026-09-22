@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { Layers, X } from "lucide-react";
 import { CampaignGate } from "@/components/geografi/CampaignGate";
@@ -113,17 +114,17 @@ export default function GeografiPage() {
           <span data-num className="font-mono text-[11px] text-fg3">
             {n(totals.areas)} områder · {n(totals.doors)} dører · {n1(
               totals.doors ? (totals.knocked / totals.doors) * 100 : 0,
-            )} % banket
+            )} % banket
           </span>
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="geo-body flex min-h-0 flex-1">
         {/* drill rail */}
-        <aside className="flex w-[276px] flex-none flex-col border-r border-line p-3">
+        <aside className="geo-rail flex w-[276px] flex-none flex-col border-r border-line p-3">
           {children.isPending && <div className="h-full animate-pulse rounded-lg bg-s1" />}
           {children.isError && (
-            <p className="text-[12.5px] text-nei">Kunne ikke hente geografi.</p>
+            <ErrorState what="geografi" onRetry={() => children.refetch()} compact />
           )}
           {children.data && (
             <GeoDrillList
@@ -138,7 +139,7 @@ export default function GeografiPage() {
         </aside>
 
         {/* map */}
-        <div className="relative min-w-0 flex-1">
+        <div className="geo-map relative min-w-0 flex-1">
           {noGpu ? (
             <GeoMapFallback
               areas={(areas.data ?? empty) as GeoJSON.FeatureCollection<GeoJSON.Polygon, AreaFeatureProps>}
@@ -164,10 +165,10 @@ export default function GeografiPage() {
           )}
 
           {/* layer switcher */}
-          <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-2">
-            <div className="pointer-events-auto rounded-lg border border-line2 bg-s1/95 p-1.5 backdrop-blur">
-              <div className="flex items-center gap-1.5 px-1.5 pb-1.5 pt-0.5">
-                <Layers size={11} className="text-fg3" />
+          <div className="map-overlay pointer-events-none absolute left-3 top-3 flex flex-col gap-2">
+            <div className="layer-box pointer-events-auto rounded-lg border border-line2 bg-s1/95 p-1.5 backdrop-blur">
+              <div className="layer-head flex items-center gap-1.5 px-1.5 pb-1.5 pt-0.5">
+                <Layers size={12} className="text-fg3" />
                 <span className="t-label">Lag</span>
               </div>
               {LAYERS.map((l) => (
@@ -187,8 +188,8 @@ export default function GeografiPage() {
             </div>
 
             {/* legend — stops come from the same module as the paint ramp */}
-            <div className="pointer-events-auto rounded-lg border border-line2 bg-s1/95 px-2.5 py-2 backdrop-blur">
-              <div className="flex items-center gap-[3px]">
+            <div className="legend-box pointer-events-auto rounded-lg border border-line2 bg-s1/95 px-2.5 py-2 backdrop-blur">
+              <div className="map-legend flex items-center gap-[3px]">
                 {legendFor(layer).map((st) => (
                   <span key={st.label} className="flex flex-col items-center gap-1">
                     <span className="h-2.5 w-7 rounded-[2px]" style={{ background: st.color }} />
@@ -204,7 +205,7 @@ export default function GeografiPage() {
             <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg border border-line2 bg-s1/95 px-3 py-2 backdrop-blur">
               <div className="text-[12.5px] font-semibold">{hover.name}</div>
               <div data-num className="mt-0.5 font-mono text-[10.5px] text-fg3">
-                {n(hover.doors)} dører · {n1(hover.penetration)} % banket · {n1(hover.ja_rate)} % ja ·{" "}
+                {n(hover.doors)} dører · {n1(hover.penetration)} % banket · {n1(hover.ja_rate)} % ja ·{" "}
                 <span className="text-ih">{n(hover.remaining)} igjen</span>
               </div>
             </div>
@@ -217,7 +218,7 @@ export default function GeografiPage() {
 
         {/* stats panel */}
         {selected && (
-          <aside className="flex w-[336px] flex-none flex-col border-l border-line">
+          <aside className="geo-stats flex w-[336px] flex-none flex-col border-l border-line">
             <div className="flex flex-none items-center gap-2 border-b border-line px-3 py-2">
               <span className="t-label">Områdedetaljer</span>
               <button
@@ -226,12 +227,12 @@ export default function GeografiPage() {
                 className="ml-auto cursor-pointer text-fg3 transition-colors hover:text-fg1"
                 aria-label="Lukk"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               {stats.isPending && <div className="h-40 animate-pulse rounded-lg bg-s1" />}
-              {stats.isError && <p className="text-[12.5px] text-nei">Kunne ikke hente områdestatistikk.</p>}
+              {stats.isError && <ErrorState what="områdestatistikk" onRetry={() => stats.refetch()} compact />}
               {stats.data && <AreaStatsPanel s={stats.data} />}
             </div>
           </aside>

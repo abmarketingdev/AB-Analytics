@@ -62,7 +62,7 @@ export default function RangeringPage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="chip-row flex flex-wrap gap-1.5">
           {METRICS.map((x) => (
             <button key={x.id} type="button" onClick={() => setMetric(x.id)}
                     className={cn("cursor-pointer rounded-md border px-2.5 py-1 text-[11.5px] transition-colors",
@@ -74,7 +74,7 @@ export default function RangeringPage() {
 
         <button type="button" onClick={() => setAdvanced((v) => !v)}
                 title="Vis fordeling (beeswarm) og team-radar — persentiler for de statistikk-kyndige"
-                className={cn("ml-auto flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11.5px] transition-colors",
+                className={cn("toolbar-end ml-auto flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11.5px] transition-colors",
                               advanced ? "border-iris bg-iris/15 text-iris-soft" : "border-line2 text-fg3 hover:text-fg2")}>
           <SlidersHorizontal size={12} /> Avansert
         </button>
@@ -140,7 +140,7 @@ export default function RangeringPage() {
             const why =
               r.tenureWeeks <= 6 ? { t: "Ny — under opptrapping", tone: "text-fo" }
               : r.doors < 900 ? { t: "Volum, ikke konvertering", tone: "text-ih" }
-              : r.convRate < 3 ? { t: "Konvertering, ikke volum", tone: "text-nei" }
+              : r.convRate < 3 ? { t: "Konvertering, ikke volum", tone: "text-warn" }
               : { t: "Ujevn leveranse", tone: "text-warn" };
             return (
               <div key={r.id} className="flex items-center gap-2.5 rounded-lg border border-line bg-s2 px-3 py-2">

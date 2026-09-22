@@ -7,12 +7,14 @@ import { sparkFor } from "@/lib/mock/world";
 import { useFilter } from "@/lib/store/filter";
 import { n, n1, pct } from "@/lib/format";
 import { spark, gid } from "./util";
+import { clickable, expandable } from "@/lib/a11y";
 
-const AVATARS = ["var(--accent)", "var(--info)", "var(--pos)", "var(--pink)", "var(--warn)"];
+// Decorative only, so no alarm colours here — green and amber must keep meaning something.
+const AVATARS = ["var(--accent)", "var(--info)", "var(--pink)", "var(--accent2)", "var(--o-ih)"];
 const HEAD: React.CSSProperties = {
   display: "grid", gridTemplateColumns: "1.6fr 1fr .6fr .6fr .6fr", gap: 14,
   padding: "14px 0 9px", borderBottom: "1px solid var(--line)",
-  font: "500 9.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)",
+  font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)",
 };
 const caret = (open: boolean): React.CSSProperties => ({ flex: "none", transition: "transform .22s ease", transform: open ? "rotate(90deg)" : "rotate(0deg)" });
 const rate = (r: number) => (r >= 3 ? "var(--pos)" : r < 2 ? "var(--neg)" : "var(--tx)");
@@ -44,15 +46,15 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
   };
 
   return (
-    <section style={{ flex: 1, display: "flex", flexDirection: "column", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", padding: "18px 20px 8px" }}>
+    <section style={{ flex: 1, display: "flex", flexDirection: "column", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 20px 8px" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <h2 style={{ margin: 0, font: "600 14.5px/1.2 'IBM Plex Sans', sans-serif" }}>Aktivitet i dag</h2>
-          <span style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>sjef → team → person</span>
+          <span className="hide-sm" style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>sjef → team → person</span>
         </div>
-        <span style={{ font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>klikk for å utvide</span>
+        <span className="hide-sm" style={{ font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>klikk for å utvide</span>
       </div>
-      <div style={HEAD}>
+      <div className="at-head" style={HEAD}>
         <span>Salgssjef</span><span>Andel av dagen</span>
         <span style={{ textAlign: "right" }}>Dører</span>
         <span style={{ textAlign: "right" }}>Ja-rate</span>
@@ -64,25 +66,25 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
           const co = openChief === c.id;
           return (
             <div key={c.id}>
-              <div onClick={() => setOpenChief(co ? null : c.id)} className="dc-hover"
-                   style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr .6fr .6fr .6fr", gap: 14, alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--line)", cursor: "pointer", background: co ? "var(--panel2)" : "transparent" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+              <div {...expandable(() => setOpenChief(co ? null : c.id), co, `${co ? "Lukk" : "Åpne"} ${c.name}`)} className="dc-hover at-chief"
+                   style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr .6fr .6fr .6fr", gap: 14, alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--line)", cursor: "pointer", background: co ? "var(--panel2)" : "transparent" }}>
+                <div className="at-who" style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="3" style={caret(co)}><path d="M9 6l6 6-6 6" /></svg>
-                  <span style={{ width: 28, height: 28, borderRadius: 9, background: AVATARS[ci % AVATARS.length], display: "grid", placeItems: "center", font: "600 10.5px 'IBM Plex Sans', sans-serif", color: "#fff", flex: "none" }}>{c.initials}</span>
+                  <span style={{ width: 24, height: 24, borderRadius: 7, background: AVATARS[ci % AVATARS.length], display: "grid", placeItems: "center", font: "600 10.5px 'IBM Plex Sans', sans-serif", color: "#fff", flex: "none" }}>{c.initials}</span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ font: "600 12.5px/1.2 'IBM Plex Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+                    <div className="at-name" style={{ font: "600 12.5px/1.2 'IBM Plex Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
                     <div style={{ font: "400 10.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)", marginTop: 4 }}>{c.teams.length} team · {c.headcount} personer</div>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <div className="at-pace" data-l="Andel av dagen" style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <div style={{ flex: 1, height: 7, borderRadius: 4, background: "var(--sunk)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 4, width: `${Math.min(100, Math.round((c.pace / 8) * 100))}%`, background: "linear-gradient(90deg,var(--accent),var(--accent2))" }} />
+                    <div style={{ height: "100%", borderRadius: 4, width: `${Math.min(100, Math.round((c.pace / 8) * 100))}%`, background: "var(--accent)" }} />
                   </div>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 5, font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx2)", width: 44 }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--pos)" }} />{c.online}</span>
                 </div>
-                <span style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace" }}>{n(c.doors)}</span>
-                <span style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace", color: rate(c.jaRate) }}>{pct(c.jaRate)}</span>
-                <span style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace", color: "var(--tx2)" }}>{n1(c.pace)}</span>
+                <span className="at-n" data-l="Dører" style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace" }}>{n(c.doors)}</span>
+                <span className="at-n detail-only" data-l="Ja-rate" style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace", color: rate(c.jaRate) }}>{pct(c.jaRate)}</span>
+                <span className="at-n detail-only" data-l="Dører/t" style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace", color: "var(--tx2)" }}>{n1(c.pace)}</span>
               </div>
 
               {co && c.teams.map((t: TeamNode, ti) => {
@@ -92,8 +94,8 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
                 const maxD = Math.max(1, ...t.members.map((m) => m.doors));
                 const avgD = roster.length ? t.doors / roster.length : 1;
                 return (
-                  <div key={t.id} style={{ animation: "dc-rowIn .34s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${ti * 40}ms` }}>
-                    <div onClick={() => setOpenTeam(to ? null : t.id)} className="dc-hover"
+                  <div key={t.id} style={{ animation: "dc-rowIn 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${ti * 40}ms` }}>
+                    <div {...expandable(() => setOpenTeam(to ? null : t.id), to, `${to ? "Lukk" : "Åpne"} ${t.name}`)} className="dc-hover"
                          style={{ display: "grid", gridTemplateColumns: "1fr 150px", gap: 16, alignItems: "center", padding: "11px 12px 11px 26px", borderBottom: "1px solid var(--line)", borderLeft: `2px solid ${t.color}`, background: "var(--sunk)", cursor: "pointer" }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
@@ -127,16 +129,16 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
                       const c1 = s.dayClass === "under" ? "var(--neg)" : s.dayClass === "half" ? "var(--warn)" : "var(--pos)";
                       const soft = s.dayClass === "under" ? "rgba(255,107,107,.13)" : s.dayClass === "half" ? "rgba(255,192,67,.13)" : "rgba(61,220,151,.13)";
                       return (
-                        <div key={s.id} onClick={() => openProfile(s.id)} className="dc-hover"
-                             style={{ display: "grid", gridTemplateColumns: "24px 1fr 130px 46px 48px 52px", gap: 12, alignItems: "center", padding: "7px 12px 7px 44px", borderBottom: "1px solid var(--line)", cursor: "pointer", animation: "dc-rowIn .4s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${si * 30}ms` }}>
+                        <div key={s.id} {...clickable(() => openProfile(s.id), `Åpne profil for ${s.name}`)} className="dc-hover"
+                             style={{ display: "grid", gridTemplateColumns: "24px 1fr 130px 46px 48px 52px", gap: 12, alignItems: "center", padding: "7px 12px 7px 44px", borderBottom: "1px solid var(--line)", cursor: "pointer", animation: "dc-rowIn 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${si * 30}ms` }}>
                           <span style={{ font: "500 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", textAlign: "right" }}>{si + 1}</span>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                             <span style={{ width: 6, height: 6, borderRadius: "50%", flex: "none", background: c1 }} />
                             <span style={{ font: "500 12px/1.2 'IBM Plex Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span>
-                            <span style={{ font: "500 9.5px/1 'IBM Plex Mono', monospace", color: c1, padding: "3px 5px", borderRadius: 5, background: soft, flex: "none" }}>{dev >= 0 ? "+" : "−"}{Math.abs(dev)} %</span>
+                            <span style={{ font: "500 10.5px/1 'IBM Plex Mono', monospace", color: c1, padding: "4px 4px", borderRadius: 5, background: soft, flex: "none" }}>{dev >= 0 ? "+" : "−"}{Math.abs(dev)} %</span>
                           </div>
                           <div style={{ position: "relative", height: 12, borderRadius: 6, background: "var(--sunk)" }}>
-                            <div style={{ position: "absolute", top: 2, bottom: 2, borderRadius: 4, left: 0, width: `${Math.min(100, Math.round((s.doors / maxD) * 100))}%`, background: c1, transformOrigin: "left", animation: "dc-barGrow .55s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${si * 30}ms` }} />
+                            <div style={{ position: "absolute", top: 2, bottom: 2, borderRadius: 4, left: 0, width: `${Math.min(100, Math.round((s.doors / maxD) * 100))}%`, background: c1, transformOrigin: "left", animation: "dc-barGrow 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${si * 30}ms` }} />
                             <div style={{ position: "absolute", top: -2, bottom: -2, width: 2, left: `${Math.min(100, Math.round((avgD / maxD) * 100))}%`, background: "var(--tx)", opacity: 0.45 }} />
                           </div>
                           <span style={{ textAlign: "right", font: "500 12px/1 'IBM Plex Mono', monospace" }}>{n(s.doors)}</span>

@@ -15,6 +15,8 @@ import { DayGraph } from "@/components/kommando/DayGraph";
 import { CampaignHealth } from "@/components/kommando/CampaignHealth";
 import { ActivityTree } from "@/components/kommando/ActivityTree";
 import { OutcomePanel, RegionsPanel, EventsFeed } from "@/components/kommando/SidePanels";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+import { Kbd } from "@/components/ui/Kbd";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -57,20 +59,21 @@ export default function Kommandosenter() {
     stride > 0 && i > 0 && i % stride === 0 ? "var(--warn)" : "var(--accent)");
 
   return (
-    <div className="dc" data-theme="dark" data-palette="violet"
+    <div className="dc dc-page" data-theme="dark"
          style={{ padding: "22px 20px 26px", display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 14, alignContent: "start", alignItems: "start", background: "var(--bg)", minHeight: "100%" }}>
 
       {/* greeting */}
-      <div style={{ gridColumn: "span 12", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginBottom: 2 }}>
+      <div className="page-head" style={{ gridColumn: "span 12", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginBottom: 2 }}>
         <div>
-          <h1 style={{ margin: 0, font: "600 26px/1.15 'IBM Plex Sans', sans-serif", letterSpacing: "-.02em" }} suppressHydrationWarning>{hello}, {name}</h1>
-          <p style={{ margin: "6px 0 0", font: "400 12.5px/1.4 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }} suppressHydrationWarning>
+          {/* h2, not h1 — the shell already provides the page heading */}
+          <h2 style={{ margin: 0, font: "600 26px/1.15 'IBM Plex Sans', sans-serif", letterSpacing: "-.02em" }} suppressHydrationWarning>{hello}, {name}</h2>
+          <p className="detail-only" style={{ margin: "6px 0 0", font: "400 12.5px/1.4 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }} suppressHydrationWarning>
             {now ? cap(longDay(now)) : "—"} · {s ? `${n(s.headcount)} ansatte · ${n(s.teams)} team · ${n(s.campaigns)} kampanjer` : "laster…"}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }} suppressHydrationWarning>oppdatert {now ? clock(now) : "—"}</span>
-          <button className="dc-hover" style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1px solid var(--line2)", background: "transparent", color: "var(--tx)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer" }}>Eksporter</button>
+          <span className="head-clock" style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }} suppressHydrationWarning>oppdatert {now ? clock(now) : "—"}</span>
+          <button className="dc-hover" data-shortcut="e" style={{ display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 12px", borderRadius: 8, border: "1px solid var(--line2)", background: "transparent", color: "var(--tx)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer" }}>Eksporter <Kbd>E</Kbd></button>
         </div>
       </div>
 
@@ -101,7 +104,5 @@ export default function Kommandosenter() {
 }
 
 function Placeholder({ span, h }: { span?: number; h: number }) {
-  return (
-    <div style={{ gridColumn: span ? `span ${span}` : undefined, height: h, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16 }} aria-busy="true" />
-  );
+  return <SkeletonCard span={span} h={h} />;
 }

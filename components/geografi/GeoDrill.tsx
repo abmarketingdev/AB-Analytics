@@ -95,8 +95,8 @@ export function GeoDrillList({
             </span>
 
             <span className="mt-1 flex items-center gap-2 font-mono text-[10px] text-fg3">
-              <span>{n1(nd.penetration)} % banket</span>
-              <span className={nd.jaRate >= 3 ? "text-ja" : undefined}>{n1(nd.jaRate)} % ja</span>
+              <span>{n1(nd.penetration)} % banket</span>
+              <span className={nd.jaRate >= 3 ? "text-ja" : undefined}>{n1(nd.jaRate)} % ja</span>
               <span className="ml-auto text-ih">{n(nd.remaining)} igjen</span>
             </span>
           </button>

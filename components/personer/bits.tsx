@@ -39,7 +39,8 @@ export function DayLegend() {
 export function Avatar({ initials, size = 26, tone }: { initials: string; size?: number; tone?: string }) {
   return (
     <span className={cn("grid flex-none place-items-center rounded-full border border-line2 font-semibold", tone ?? "bg-s3 text-fg2")}
-          style={{ width: size, height: size, fontSize: size * 0.4 }}>
+          // 0.4 of a 22px avatar is 8.8px, which nobody can read
+          style={{ width: size, height: size, fontSize: Math.max(10.5, size * 0.4) }}>
       {initials}
     </span>
   );

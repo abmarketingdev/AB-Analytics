@@ -54,7 +54,7 @@ export default function KampanjerPage() {
               <span className="h-8 w-1.5 flex-none rounded-full" style={{ background: c.color }} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14px] font-semibold">{c.name}</div>
-                <div data-num className="mt-0.5 font-mono text-[10px] text-fg3">
+                <div data-num className="detail-only mt-0.5 font-mono text-[10.5px] text-fg3">
                   uke {c.weekOfCampaign} · {n(c.areas)} områder · {n(c.headcount)} pers.
                 </div>
               </div>
@@ -64,15 +64,15 @@ export default function KampanjerPage() {
               </span>
             </div>
 
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mini-row mt-3 grid grid-cols-3 gap-2">
               <Mini label="Dører" value={n(c.knocked)} />
-              <Mini label="Ja-rate" value={`${n1(c.jaRate)} %`} tone={c.jaRate >= 3.5 ? "text-ja" : undefined} />
+              <Mini label="Ja-rate" value={`${n1(c.jaRate)} %`} tone={c.jaRate >= 3.5 ? "text-ja" : undefined} className="detail-only" />
               <Mini label="Gjenstår" value={n(c.remaining)} tone="text-ih" />
             </div>
 
             <div className="mt-2.5">
               <div className="flex justify-between font-mono text-[9.5px] text-fg3">
-                <span>dekning</span><span>{n1(c.coverage)} %</span>
+                <span>dekning</span><span className="detail-only">{n1(c.coverage)} %</span>
               </div>
               <div className="mt-1 h-1.5 overflow-hidden rounded-sm bg-s3">
                 <div className="h-full rounded-sm" style={{ width: `${c.coverage}%`, background: c.color }} />
@@ -151,9 +151,9 @@ export default function KampanjerPage() {
   );
 }
 
-function Mini({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Mini({ label, value, tone, className }: { label: string; value: string; tone?: string; className?: string }) {
   return (
-    <div>
+    <div className={className}>
       <div className="t-label truncate">{label}</div>
       <div className={cn("mt-0.5 font-mono text-[14px] font-semibold tabular-nums", tone)}>{value}</div>
     </div>
@@ -189,7 +189,7 @@ function Series({ d }: { d: NonNullable<Awaited<ReturnType<typeof fetchCampaignD
             <rect key={i} x={PAD + i * bw + 1.5} y={H - 26 - h} width={Math.max(1, bw - 3)} height={h}
                   rx="2" fill={d.color} fillOpacity="0.55" className="grow-bar"
                   style={{ animationDelay: `${i * 28}ms`, transformOrigin: `center ${H - 26}px` }}>
-              <title>{`${s.label}: ${n(s.doors)} dører · ${n1(s.jaRate)} % ja`}</title>
+              <title>{`${s.label}: ${n(s.doors)} dører · ${n1(s.jaRate)} % ja`}</title>
             </rect>
           );
         })}
@@ -215,7 +215,7 @@ function Saturation({ rows, color }: { rows: Array<{ pass: number; jaRate: numbe
           <span className="h-3 flex-1 overflow-hidden rounded-sm bg-s3">
             <span className="block h-full rounded-sm" style={{ width: `${(r.jaRate / max) * 100}%`, background: color }} />
           </span>
-          <span data-num className="w-12 text-right font-mono text-fg1">{n1(r.jaRate)} %</span>
+          <span data-num className="w-12 text-right font-mono text-fg1">{n1(r.jaRate)} %</span>
         </div>
       ))}
     </div>
@@ -239,13 +239,13 @@ function NeiMix({ rows }: { rows: Array<{ key: string; label: string; hard: bool
             <span className="h-2 w-2 flex-none rounded-[2px]" style={{ background: r.hard ? "var(--nei)" : "var(--ih)" }} />
             <span className="min-w-0 truncate text-fg2">{r.label}</span>
             <span data-num className="ml-auto text-fg1">{n(r.value)}</span>
-            <span data-num className="w-11 text-right text-fg3">{n1(r.share * 100)} %</span>
+            <span data-num className="w-11 text-right text-fg3">{n1(r.share * 100)} %</span>
           </div>
         ))}
       </div>
       <p className="mt-auto border-t border-line pt-2.5 font-mono text-[10.5px] text-fg3">
-        hard <b className="font-medium text-nei">{n1((hard / total) * 100)} %</b> — coach ·{" "}
-        strukturell <b className="font-medium text-ih">{n1(100 - (hard / total) * 100)} %</b> — flytt
+        hard <b className="font-medium text-nei">{n1((hard / total) * 100)} %</b> — coach ·{" "}
+        strukturell <b className="font-medium text-ih">{n1(100 - (hard / total) * 100)} %</b> — flytt
       </p>
     </div>
   );
@@ -265,8 +265,8 @@ function HourWeek({ m }: { m: number[][] }) {
           {m.map((row, d) => (
             <div key={d} className="flex flex-1 gap-1">
               {row.map((v, h) => (
-                <span key={h} title={`${WD[d]} ${14 + h}:00 — ${n1(v)} % ja`}
-                      className={cn("cell-in h-6 flex-1 cursor-pointer rounded-[3px] transition-transform hover:scale-110",
+                <span key={h} title={`${WD[d]} ${14 + h}:00 — ${n1(v)} % ja`}
+                      className={cn("cell-in h-6 flex-1 cursor-pointer rounded-[3px] transition-colors hover:text-fg1",
                                     v === best && "ring-1 ring-ja")}
                       style={{ background: `color-mix(in oklab, var(--ja) ${Math.round((v / max) * 92)}%, var(--s2))`,
                                animationDelay: `${(d * 8 + h) * 12}ms` }} />
@@ -298,7 +298,7 @@ function RosterChip({ p, campaignId }: {
         <span className="block truncate text-[12px] font-medium">{p.name}</span>
         <span data-num className="block font-mono text-[9.5px] text-fg3">{n(p.doors)} dører · {n1(p.pace)} d/t</span>
       </span>
-      <span data-num className={cn("font-mono text-[12px]", p.jaRate >= 3 ? "text-ja" : "text-fg2")}>{n1(p.jaRate)} %</span>
+      <span data-num className={cn("font-mono text-[12px]", p.jaRate >= 3 ? "text-ja" : "text-fg2")}>{n1(p.jaRate)} %</span>
     </Link>
   );
 }

@@ -6,6 +6,7 @@ import { ORG, scaledPeople } from "@/lib/mock/org";
 import { classify, deviation, historyFor, sumRows } from "@/lib/mock/history";
 import { CAMPAIGNS } from "@/lib/mock/world";
 import { mockCall } from "./client";
+import { n1 } from "@/lib/format";
 
 export interface Threshold {
   id: string;
@@ -151,14 +152,14 @@ export function evaluate(t: typeof DEFAULTS): Breach[] {
            `${lowDoors} arbeidsdager på rad under ${t.minDoorsPerDay} dører.`);
     else if (perDay < t.minDoorsPerDay)
       push("low_doors_per_day", "warning", perDay, t.minDoorsPerDay, 0,
-           `Snitt ${perDay.toFixed(1)} dører per arbeidsdag (minimum ${t.minDoorsPerDay}).`);
+           `Snitt ${n1(perDay)} dører per arbeidsdag (minimum ${t.minDoorsPerDay}).`);
 
     if (lowJa >= t.consecutiveDaysThreshold)
       push("consecutive_low_yes_rate", "critical", jaRate, t.minYesRatePercent, lowJa,
            `${lowJa} dager på rad under ${t.minYesRatePercent} % ja-rate.`);
     else if (jaRate < t.minYesRatePercent)
       push("low_yes_rate", "warning", jaRate, t.minYesRatePercent, 0,
-           `Ja-rate ${jaRate.toFixed(1)} % (minimum ${t.minYesRatePercent} %).`);
+           `Ja-rate ${n1(jaRate)} % (minimum ${n1(t.minYesRatePercent)} %).`);
 
     if (nonFull >= t.consecutiveDaysThreshold)
       push("non_full_days", nonFull >= t.consecutiveDaysThreshold * 2 ? "critical" : "warning",
@@ -167,11 +168,11 @@ export function evaluate(t: typeof DEFAULTS): Breach[] {
 
     if (noRate > t.maxNoRatePercent)
       push("high_no_rate", "warning", noRate, t.maxNoRatePercent, 0,
-           `Avslagsrate ${noRate.toFixed(1)} % (maksimum ${t.maxNoRatePercent} %).`);
+           `Avslagsrate ${n1(noRate)} % (maksimum ${n1(t.maxNoRatePercent)} %).`);
 
     if (contact < t.minContactRatePercent)
       push("low_contact_rate", "info", contact, t.minContactRatePercent, 0,
-           `Kontaktrate ${contact.toFixed(1)} % (minimum ${t.minContactRatePercent} %).`);
+           `Kontaktrate ${n1(contact)} % (minimum ${n1(t.minContactRatePercent)} %).`);
   }
 
   const order: Record<Severity, number> = { critical: 0, warning: 1, info: 2 };

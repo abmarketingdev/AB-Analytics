@@ -4,13 +4,13 @@ import type { OutcomeMix, FeedItem, FeedKind } from "@/lib/api/dashboard";
 import type { Presence } from "@/lib/api/presence";
 import { n, pct } from "@/lib/format";
 
-const CARD: React.CSSProperties = { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", padding: 18 };
+const CARD: React.CSSProperties = { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: 18 };
 const H2: React.CSSProperties = { margin: 0, font: "600 14.5px/1.2 'IBM Plex Sans', sans-serif" };
 
 function LivePip() {
   return (
     <span style={{ position: "relative", width: 6, height: 6 }}>
-      <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--pos)", animation: "dc-pulse 2s infinite" }} />
+      <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--pos)", animation: "dc-pulse 0.2s infinite" }} />
       <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--pos)" }} />
     </span>
   );
@@ -19,10 +19,10 @@ function LivePip() {
 /** Utfall — a segmented mix bar over the outcome list + contact/conversion. */
 export function OutcomePanel({ outcome }: { outcome: OutcomeMix }) {
   const items = [
-    { label: "Nei", n: outcome.nei, color: "var(--neg)" },
-    { label: "Ikke hjemme", n: outcome.ikke_hjemme, color: "var(--warn)" },
-    { label: "Følg opp", n: outcome.folg_opp, color: "var(--info)" },
-    { label: "Ja", n: outcome.ja, color: "var(--pos)" },
+    { label: "Nei", n: outcome.nei, color: "var(--o-nei)" },
+    { label: "Ikke hjemme", n: outcome.ikke_hjemme, color: "var(--o-ih)" },
+    { label: "Følg opp", n: outcome.folg_opp, color: "var(--o-fo)" },
+    { label: "Ja", n: outcome.ja, color: "var(--o-ja)" },
   ].map((o) => ({ ...o, share: (o.n / outcome.total) * 100 }));
   const samtalekonv = outcome.contacted ? (outcome.ja / outcome.contacted) * 100 : 0;
 
@@ -69,7 +69,7 @@ export function RegionsPanel({ presence }: { presence: Presence }) {
     <section style={CARD}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h2 style={H2}>Regioner i felt</h2>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--pos)" }}><LivePip />SANNTID</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10.5px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--pos)" }}><LivePip />SANNTID</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
         {regions.map((r) => (
@@ -98,10 +98,10 @@ export function RegionsPanel({ presence }: { presence: Presence }) {
 }
 
 const KIND: Record<FeedKind, { label: string; color: string; chipBg: string }> = {
-  ja: { label: "ja", color: "var(--pos)", chipBg: "rgba(61,220,151,.14)" },
-  nei: { label: "nei", color: "var(--neg)", chipBg: "rgba(255,107,107,.12)" },
-  ikke_hjemme: { label: "ikke hjemme", color: "var(--warn)", chipBg: "rgba(255,192,67,.12)" },
-  folg_opp: { label: "følg opp", color: "var(--info)", chipBg: "rgba(90,169,255,.12)" },
+  ja: { label: "ja", color: "var(--o-ja)", chipBg: "rgba(61,220,151,.14)" },
+  nei: { label: "nei", color: "var(--o-nei)", chipBg: "rgba(139,144,166,.16)" },
+  ikke_hjemme: { label: "ikke hjemme", color: "var(--o-ih)", chipBg: "rgba(201,169,97,.14)" },
+  folg_opp: { label: "følg opp", color: "var(--o-fo)", chipBg: "rgba(90,169,255,.12)" },
   proximity: { label: "nærhet", color: "var(--pink)", chipBg: "rgba(255,122,184,.12)" },
   session: { label: "økt", color: "var(--tx2)", chipBg: "var(--panel2)" },
 };
@@ -118,13 +118,13 @@ export function EventsFeed({ feed }: { feed: FeedItem[] }) {
     ? Math.max(1, Math.round(60000 / ((feed[0].at - feed[feed.length - 1].at) / (feed.length - 1))))
     : 0;
   return (
-    <section style={{ flex: 1, minHeight: 340, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", padding: "18px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <section style={{ flex: 1, minHeight: 340, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px 12px", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
           <h2 style={H2}>Hendelser</h2>
           <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{rate} hendelser/min</span>
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--pos)" }}><LivePip />LIVE</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10.5px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--pos)" }}><LivePip />LIVE</span>
       </div>
       <div style={{ position: "relative", flex: 1, overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden", padding: "6px 18px 0" }}>
@@ -136,10 +136,10 @@ export function EventsFeed({ feed }: { feed: FeedItem[] }) {
                 <span style={{ font: "400 10.5px/1.5 'IBM Plex Mono', monospace", color: i === 0 ? "var(--tx2)" : "var(--tx3)", textAlign: "right" }}>{ago(e.at, now)}</span>
                 <div style={{ position: "relative", minWidth: 0, paddingLeft: 15, borderLeft: "1px solid var(--line)" }}>
                   <span style={{ position: "absolute", left: -4, top: 5, width: 7, height: 7, borderRadius: "50%", background: k.color, boxShadow: "0 0 0 3px var(--panel)" }} />
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 7, minWidth: 0 }}>
+                  <div className="feed-line" style={{ display: "flex", alignItems: "baseline", gap: 7, minWidth: 0 }}>
                     <span style={{ font: "600 12px/1.3 'IBM Plex Sans', sans-serif", whiteSpace: "nowrap" }}>{e.person}</span>
-                    <span style={{ font: "500 9.5px/1 'IBM Plex Sans', sans-serif", padding: "3px 5px", borderRadius: 5, background: k.chipBg, color: k.color, flex: "none" }}>{k.label}</span>
-                    <span style={{ font: "400 10.5px/1.4 'IBM Plex Mono', monospace", color: "var(--tx3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{where}</span>
+                    <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "4px 4px", borderRadius: 5, background: k.chipBg, color: k.color, flex: "none" }}>{k.label}</span>
+                    <span className="wrap-sm feed-where" style={{ font: "400 10.5px/1.4 'IBM Plex Mono', monospace", color: "var(--tx3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{where}</span>
                   </div>
                 </div>
               </div>

@@ -8,6 +8,9 @@ import { sparkFor } from "@/lib/mock/world";
 import { useFilter } from "@/lib/store/filter";
 import { n, n1, pct } from "@/lib/format";
 import { spark } from "@/components/kommando/util";
+import { clickable } from "@/lib/a11y";
+import { Kbd } from "@/components/ui/Kbd";
+import { SkeletonRows, EmptyState } from "@/components/ui/Skeleton";
 
 const COLS = "250px 118px 1fr 96px 74px 132px 28px";
 type Sort = "avvik" | "doors" | "navn";
@@ -25,8 +28,8 @@ function statusOf(met: number) {
 const devColor = (d: number) => (d >= 0 ? "var(--pos)" : d < -35 ? "var(--neg)" : "var(--warn)");
 
 const HEAD: React.CSSProperties = {
-  display: "grid", gridTemplateColumns: COLS, gap: 14, alignItems: "center", padding: "11px 18px",
-  borderBottom: "1px solid var(--line)", font: "500 9.5px/1 'IBM Plex Sans', sans-serif",
+  display: "grid", gridTemplateColumns: COLS, gap: 14, alignItems: "center", padding: "8px 16px",
+  borderBottom: "1px solid var(--line)", font: "500 10.5px/1 'IBM Plex Sans', sans-serif",
   letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)",
 };
 
@@ -83,14 +86,14 @@ export default function PersonerPage() {
   ];
 
   return (
-    <div className="dc" data-theme="dark" data-palette="violet" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14, background: "var(--bg)", minHeight: "100%", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+    <div className="dc dc-pad" data-theme="dark" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14, background: "var(--bg)", minHeight: "100%", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
 
       {/* summary band */}
-      <section style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1.4fr", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", overflow: "hidden" }}>
-        <SumCell label="Personer" value={n(summary.people)} suffix="i utvalget" sub={`${n(summary.online)} pålogget nå`} />
+      <section className="sum-band" style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1.4fr", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden" }}>
+        <SumCell label="Personer" value={n(summary.people)} suffix="i utvalget" sub={`${n(summary.online)} pålogget nå`} primary />
         <SumCell label="Dører" value={n(summary.doors)} sub={`${n1(summary.perDay)} per person/dag`} />
-        <SumCell label="Ja-rate" value={pct(summary.jaRate)} valueColor="var(--pos)" sub="normalt 3,1 %" />
-        <div style={{ padding: "16px 20px" }}>
+        <SumCell label="Ja-rate" value={pct(summary.jaRate)} sub="normalt 3,1 %" />
+        <div className="sum-chart" style={{ padding: "16px 20px" }}>
           <div style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)" }}>Fordeling etter krav</div>
           <div style={{ display: "flex", gap: 3, height: 30, marginTop: 11 }}>
             {bands.map((b) => (
@@ -106,12 +109,13 @@ export default function PersonerPage() {
       </section>
 
       {/* table */}
-      <section style={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid var(--line)" }}>
+      <section style={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden" }}>
+        <div className="roster-tools" style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 16px", borderBottom: "1px solid var(--line)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9, height: 34, padding: "0 12px", borderRadius: 10, background: "var(--sunk)", border: "1px solid var(--line)", minWidth: 280 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-            <input value={query} onChange={(e) => { setQuery(e.target.value); setVisible(40); }} placeholder="Søk navn, team eller kampanje"
+            <input value={query} onChange={(e) => { setQuery(e.target.value); setVisible(40); }} placeholder="Søk navn, team eller kampanje" data-shortcut-focus
                    style={{ flex: 1, border: 0, background: "transparent", outline: "none", color: "var(--tx)", font: "400 12.5px 'IBM Plex Sans', sans-serif" }} />
+            <Kbd>/</Kbd>
           </div>
           <div style={{ display: "flex", padding: 3, borderRadius: 10, background: "var(--sunk)", border: "1px solid var(--line)" }}>
             {([["avvik", "Avvik"], ["doors", "Dører"], ["navn", "Navn"]] as const).map(([k, l]) => (
@@ -122,13 +126,27 @@ export default function PersonerPage() {
           <span style={{ font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>{n(Math.min(visible, filtered.length))} av {n(filtered.length)} vist</span>
         </div>
 
-        <div style={HEAD}>
+        <div className="roster-head" style={HEAD}>
           <span>Navn</span><span>Status</span><span>Mot egen normal</span>
           <span style={{ textAlign: "right" }}>Dører</span><span style={{ textAlign: "right" }}>Ja-rate</span>
           <span style={{ textAlign: "center" }}>30 dager</span><span />
         </div>
 
-        {roster.isPending && <div style={{ padding: 40, textAlign: "center", color: "var(--tx3)", font: "400 12px 'IBM Plex Sans', sans-serif" }}>Laster…</div>}
+        {roster.isPending && <SkeletonRows rows={9} columns={COLS} rowHeight={46} />}
+        {!roster.isPending && shown.length === 0 && (
+          <EmptyState
+            title={query.trim() ? `Ingen treff på “${query.trim()}”` : "Ingen personer i utvalget"}
+            hint={query.trim()
+              ? "Søket gjelder navn, team, salgssjef og kampanje."
+              : "Filtrene over utelukker alle. Prøv å nullstille dem."}
+            action={query.trim() ? (
+              <button onClick={() => setQuery("")} className="dc-hoverline"
+                      style={{ marginTop: 4, height: 30, padding: "0 13px", borderRadius: 9, border: "1px solid var(--line2)", background: "transparent", color: "var(--tx2)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer" }}>
+                Tøm søket
+              </button>
+            ) : undefined}
+          />
+        )}
         {shown.map((r, i) => {
           const met = kravMet(r);
           const st = statusOf(met);
@@ -138,17 +156,17 @@ export default function PersonerPage() {
           const circ = 94.2;
           const sp = spark(sparkFor(r.id), 132, 30, 3);
           return (
-            <div key={r.id} onClick={() => openProfile(r.id)} className="dc-hover"
-                 style={{ position: "relative", display: "grid", gridTemplateColumns: COLS, gap: 14, alignItems: "center", padding: "10px 18px", borderBottom: "1px solid var(--line)", cursor: "pointer", animation: "dc-rowIn .34s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${Math.min(i, 20) * 18}ms` }}>
+            <div key={r.id} {...clickable(() => openProfile(r.id), `Åpne profil for ${r.name}`)} className="dc-hover roster-row"
+                 style={{ position: "relative", display: "grid", gridTemplateColumns: COLS, gap: 14, alignItems: "center", padding: "8px 16px", borderBottom: "1px solid var(--line)", cursor: "pointer", animation: "dc-rowIn 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${Math.min(i, 20) * 18}ms` }}>
               <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: st.color }} />
               {/* name + ring avatar */}
               <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
-                <div style={{ position: "relative", width: 34, height: 34, flex: "none" }}>
+                <div style={{ position: "relative", width: 28, height: 28, flex: "none" }}>
                   <svg viewBox="0 0 34 34" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
                     <circle cx="17" cy="17" r="15" fill="none" stroke="var(--sunk)" strokeWidth="3" />
                     <circle cx="17" cy="17" r="15" fill="none" stroke={st.color} strokeWidth="3" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ * (1 - met / 4)} style={{ transition: "stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1)" }} />
                   </svg>
-                  <span style={{ position: "absolute", inset: 4, borderRadius: "50%", background: "var(--panel2)", display: "grid", placeItems: "center", font: "600 10px 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{r.initials}</span>
+                  <span style={{ position: "absolute", inset: 3, borderRadius: "50%", background: "var(--panel2)", display: "grid", placeItems: "center", font: "600 10.5px 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{r.initials}</span>
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -162,19 +180,27 @@ export default function PersonerPage() {
               </div>
               {/* status */}
               <div style={{ justifySelf: "start", display: "flex", flexDirection: "column", gap: 5 }}>
-                <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "5px 9px", borderRadius: 7, background: st.bg, color: st.color, whiteSpace: "nowrap" }}>{st.word}</span>
-                <span style={{ font: "400 9.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", paddingLeft: 2 }}>{met}/4 krav</span>
+                {/* a dot carries the state; the label stays grey so the eye is
+                    not pulled to every row at once */}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)", whiteSpace: "nowrap" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.color, flex: "none" }} />
+                  {st.word}
+                </span>
+                <span className="detail-only" style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", paddingLeft: 2 }}>{met}/4 krav</span>
               </div>
               {/* deviation vs own normal */}
-              <div style={{ position: "relative", height: 22, display: "flex", alignItems: "center" }}>
-                <div style={{ position: "absolute", left: 0, right: 0, height: 8, borderRadius: 4, background: "var(--sunk)" }} />
-                <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "var(--line2)" }} />
-                <div style={{ position: "absolute", height: 8, borderRadius: 4, left: dev < 0 ? `${50 - half}%` : "50%", width: `${half}%`, background: dc, transformOrigin: dev < 0 ? "right" : "left", animation: "dc-barGrow .5s cubic-bezier(.2,.8,.2,1) both" }} />
-                <span style={{ position: "absolute", right: 0, transform: "translateY(-15px)", font: "600 10.5px/1 'IBM Plex Mono', monospace", color: dc }}>{dev >= 0 ? "+" : "−"}{Math.abs(dev)} %</span>
+              <div className="rr-cell rr-dev" data-l="Avvik" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="rr-devbar" style={{ position: "relative", flex: 1, minWidth: 0, height: 8 }}>
+                  <div style={{ position: "absolute", inset: 0, borderRadius: 4, background: "var(--sunk)" }} />
+                  <div style={{ position: "absolute", left: "50%", top: -5, bottom: -5, width: 1, background: "var(--line2)" }} />
+                  <div style={{ position: "absolute", top: 0, height: 8, borderRadius: 4, left: dev < 0 ? `${50 - half}%` : "50%", width: `${half}%`, background: dc, transformOrigin: dev < 0 ? "right" : "left", animation: "dc-barGrow 0.2s cubic-bezier(.2,.8,.2,1) both" }} />
+                </div>
+                {/* sits beside the bar, not floating over the row above it */}
+                <span style={{ width: 46, flex: "none", textAlign: "right", font: "600 11px/1 'IBM Plex Mono', monospace", color: dc }}>{dev >= 0 ? "+" : "−"}{Math.abs(dev)} %</span>
               </div>
-              <span style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace" }}>{n(r.doors)}</span>
-              <span style={{ textAlign: "right", font: "500 12px/1 'IBM Plex Mono', monospace", color: r.jaRate >= 2.5 ? "var(--pos)" : "var(--tx2)" }}>{pct(r.jaRate)}</span>
-              <svg viewBox="0 0 132 30" preserveAspectRatio="none" style={{ width: 132, height: 30, display: "block", color: dc }}>
+              <span className="rr-cell" data-l="Dører" style={{ textAlign: "right", font: "500 12.5px/1 'IBM Plex Mono', monospace" }}>{n(r.doors)}</span>
+              <span className="rr-cell detail-only" data-l="Ja-rate" style={{ textAlign: "right", font: "500 12px/1 'IBM Plex Mono', monospace", color: "var(--tx)" }}>{pct(r.jaRate)}</span>
+              <svg viewBox="0 0 132 30" preserveAspectRatio="none" style={{ width: 132, height: 30, display: "block", color: "var(--tx3)" }}>
                 <path d={sp.area} fill="currentColor" opacity="0.13" />
                 <path d={sp.line} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                 <line x1="0" y1="15" x2="132" y2="15" stroke="var(--tx3)" strokeWidth="1" strokeDasharray="3 3" opacity=".55" />
@@ -185,7 +211,7 @@ export default function PersonerPage() {
         })}
 
         {visible < filtered.length && (
-          <div style={{ padding: "12px 18px" }}>
+          <div style={{ padding: "12px 16px" }}>
             <button onClick={() => setVisible((v) => v + 40)} className="dc-hoverline"
                     style={{ width: "100%", height: 36, borderRadius: 10, border: "1px dashed var(--line2)", background: "transparent", color: "var(--tx2)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer", transition: "color .14s ease, border-color .14s ease" }}>
               Vis {Math.min(40, filtered.length - visible)} til
@@ -197,15 +223,15 @@ export default function PersonerPage() {
   );
 }
 
-function SumCell({ label, value, suffix, sub, valueColor }: { label: string; value: string; suffix?: string; sub: string; valueColor?: string }) {
+function SumCell({ label, value, suffix, sub, valueColor, primary }: { label: string; value: string; suffix?: string; sub: string; valueColor?: string; primary?: boolean }) {
   return (
-    <div style={{ padding: "16px 20px", borderRight: "1px solid var(--line)" }}>
+    <div className={primary ? "sum-primary" : "sum-sec"} style={{ padding: "16px 20px", borderRight: "1px solid var(--line)" }}>
       <div style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)" }}>{label}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 9 }}>
         <span style={{ font: "600 30px/1 'IBM Plex Mono', monospace", color: valueColor ?? "var(--tx)" }}>{value}</span>
         {suffix && <span style={{ font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>{suffix}</span>}
       </div>
-      <div style={{ marginTop: 10, font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{sub}</div>
+      <div className="detail-only" style={{ marginTop: 10, font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{sub}</div>
     </div>
   );
 }

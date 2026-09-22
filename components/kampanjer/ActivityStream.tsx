@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import {
   Ban, DoorOpen, LogIn, LogOut, MapPin, Plus, Trash2, Radio, Filter,
@@ -81,7 +82,7 @@ export function ActivityStream({
           the status pill and the filter at 340 px without wrapping mid-label. */}
       <div className="flex flex-col gap-1.5 border-b border-line px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <Radio size={13} className={cn("flex-none", online ? "text-ja" : "text-fg3")} />
+          <Radio size={16} className={cn("flex-none", online ? "text-ja" : "text-fg3")} />
           <span className="t-label !text-fg2">Live handlinger</span>
           {online ? (
             <span className={cn("ml-auto flex flex-none items-center gap-1.5 rounded-sm bg-ja/12 px-1.5 py-[1px] font-mono text-[9.5px] text-ja transition-opacity",
@@ -102,7 +103,7 @@ export function ActivityStream({
             className={cn("flex flex-none cursor-pointer items-center gap-1 rounded-md px-1.5 py-[3px] font-mono text-[9.5px] transition-colors",
                           onlyCampaign ? "bg-iris/18 text-iris-soft" : "text-fg3 hover:bg-s2 hover:text-fg2")}
           >
-            <Filter size={10} /> {onlyCampaign ? campaignName.toUpperCase() : "KUN KAMPANJE"}
+            <Filter size={12} /> {onlyCampaign ? campaignName.toUpperCase() : "KUN KAMPANJE"}
           </button>
           <span data-num className="ml-auto flex-none font-mono text-[9.5px] text-fg3">
             {rows.length} av {all.length}
@@ -118,12 +119,8 @@ export function ActivityStream({
         )}
 
         {q.isError && (
-          <div className="flex flex-col items-start gap-2 p-3">
-            <p className="text-[12px] text-crit">Kunne ikke hente hendelsesloggen.</p>
-            <button type="button" onClick={() => q.refetch()}
-                    className="cursor-pointer rounded-md border border-line px-2 py-1 font-mono text-[10px] text-fg2 transition-colors hover:border-line2 hover:text-fg1">
-              PRØV IGJEN
-            </button>
+          <div className="p-3">
+            <ErrorState what="hendelsesloggen" onRetry={() => q.refetch()} compact />
           </div>
         )}
 
@@ -139,7 +136,7 @@ export function ActivityStream({
             >
               <span className="mt-[3px] grid h-[19px] w-[19px] flex-none place-items-center rounded-[5px]"
                     style={{ background: `color-mix(in oklab, ${c} 16%, transparent)`, color: c }}>
-                <Icon size={11} />
+                <Icon size={12} />
               </span>
 
               <div className="min-w-0 flex-1">

@@ -8,6 +8,7 @@ import { CAMPAIGNS } from "@/lib/mock/world";
 import { mulberry32, seedFrom } from "@/lib/mock/rng";
 import { DEFAULTS } from "./thresholds";
 import { mockCall } from "./client";
+import { n1 } from "@/lib/format";
 
 export type { DayRow, DayClass };
 
@@ -72,12 +73,12 @@ function buildRow(p: Person, campaignId = "all", limits: RowLimits = DEFAULTS): 
   const belowJa = s.doors > 200 && (s.ja / s.doors) * 100 < limits.minYesRatePercent;
 
   const reasons: string[] = [];
-  if (dev.isAlert) reasons.push(`${dev.streakLen} dager under egen normal, −${dev.shortfallPct.toFixed(1)} %`);
+  if (dev.isAlert) reasons.push(`${dev.streakLen} dager under egen normal, −${n1(dev.shortfallPct)} %`);
   if (p.flag === "no_full_day") reasons.push("Ingen full dag på seks arbeidsdager");
   if (p.flag === "proximity") reasons.push("Gjentatte nærhetsbrudd ved registrering");
   if (p.flag === "late_start") reasons.push("Starter konsekvent etter resten av teamet");
-  if (belowVolume) reasons.push(`${perDay.toFixed(1)} dører per arbeidsdag (minimum ${limits.minDoorsPerDay})`);
-  if (belowJa) reasons.push(`Ja-rate ${((s.ja / s.doors) * 100).toFixed(1)} % (minimum ${limits.minYesRatePercent.toFixed(1).replace(".", ",")} %)`);
+  if (belowVolume) reasons.push(`${n1(perDay)} dører per arbeidsdag (minimum ${limits.minDoorsPerDay})`);
+  if (belowJa) reasons.push(`Ja-rate ${n1((s.ja / s.doors) * 100)} % (minimum ${n1(limits.minYesRatePercent)} %)`);
 
   const attention =
     (dev.isAlert ? 40 + Math.min(30, dev.shortfallPct * 0.6) : 0) +

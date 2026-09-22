@@ -31,8 +31,8 @@ export function TodayCurve({ points, nowIndex }: { points: CurvePoint[]; nowInde
     ? Math.round(((head.today - head.median) / head.median) * 100) : 0;
   const ahead = pct >= 0;
   const near = Math.abs(pct) < 3;
-  const verdict = near ? "på normalen" : `${ahead ? "+" : "−"}${Math.abs(pct)} % vs normal`;
-  const vTone = near ? "text-fg3" : ahead ? "text-ja" : "text-nei";
+  const verdict = near ? "på normalen" : `${ahead ? "+" : "−"}${Math.abs(pct)} % vs normal`;
+  const vTone = near ? "text-fg3" : ahead ? "text-ja" : "text-crit";
   const gapColor = ahead ? "var(--ja)" : "var(--crit)";
 
   const max = Math.max(...points.map((p) => p.p75), ...proj) * 1.06 || 1;

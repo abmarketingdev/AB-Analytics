@@ -60,7 +60,7 @@ export function RadarBadge({ spinKey = 0 }: { spinKey?: number }) {
         "grid h-[22px] w-[22px] flex-none place-items-center rounded-[7px]",
         spinKey > 0 && "radar-pulse",
       )}
-      style={{ background: "linear-gradient(140deg,#9b7fff,#5b3fd9)" }}
+      style={{ background: "var(--iris)" }}
     >
       <span className="block h-[7px] w-[7px] rounded-full border-[1.5px] border-white/90" />
     </span>

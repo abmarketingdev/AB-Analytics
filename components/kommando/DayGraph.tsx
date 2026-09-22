@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { Daily, OutcomeMix, CurvePoint } from "@/lib/api/dashboard";
 import { n, delta as fmtDelta } from "@/lib/format";
+import { clickable } from "@/lib/a11y";
 
 interface Bar { label: string; short: string; doors: number; normal: number; cls: "over" | "normal" | "under"; showLabel: boolean }
 type Metric = "doors" | "sales";
@@ -85,13 +86,13 @@ export function DayGraph({ daily, curve, outcome, staff }: {
     ? (() => {
         const t = sd.doors || 1;
         const rows = [
-          { label: "Nei", c: "var(--neg)", n: Math.round((outcome.nei / outcome.total) * t) },
-          { label: "Ikke hjemme", c: "var(--warn)", n: Math.round((outcome.ikke_hjemme / outcome.total) * t) },
-          { label: "Følg opp", c: "var(--info)", n: Math.round((outcome.folg_opp / outcome.total) * t) },
-          { label: "Ja", c: "var(--pos)", n: Math.round((outcome.ja / outcome.total) * t) },
-        ].map((r) => ({ ...r, w: `${Math.round((r.n / t) * 100)}%`, pct: `${((r.n / t) * 100).toFixed(1)} %`.replace(".", ",") }));
+          { label: "Nei", c: "var(--o-nei)", n: Math.round((outcome.nei / outcome.total) * t) },
+          { label: "Ikke hjemme", c: "var(--o-ih)", n: Math.round((outcome.ikke_hjemme / outcome.total) * t) },
+          { label: "Følg opp", c: "var(--o-fo)", n: Math.round((outcome.folg_opp / outcome.total) * t) },
+          { label: "Ja", c: "var(--o-ja)", n: Math.round((outcome.ja / outcome.total) * t) },
+        ].map((r) => ({ ...r, w: `${Math.round((r.n / t) * 100)}%`, pct: `${((r.n / t) * 100).toFixed(1)} %`.replace(".", ",") }));
         const d = sd.doors - sd.normal;
-        return { slot: sd.label, total: n(sd.doors), normal: n(sd.normal), rows, delta: fmtDelta(d), deltaBg: d >= 0 ? "rgba(61,220,151,.13)" : "rgba(255,107,107,.13)", deltaColor: d >= 0 ? "var(--pos)" : "var(--neg)", contact: `${outcome.contact_rate.toFixed(1)} %`.replace(".", ","), staff: n(staff) };
+        return { slot: sd.label, total: n(sd.doors), normal: n(sd.normal), rows, delta: fmtDelta(d), deltaBg: d >= 0 ? "rgba(61,220,151,.13)" : "rgba(255,107,107,.13)", deltaColor: d >= 0 ? "var(--pos)" : "var(--neg)", contact: `${outcome.contact_rate.toFixed(1)} %`.replace(".", ","), staff: n(staff) };
       })()
     : null;
 
@@ -102,25 +103,25 @@ export function DayGraph({ daily, curve, outcome, staff }: {
   });
 
   return (
-    <section style={{ gridColumn: "span 12", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)", padding: "18px 20px 16px" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+    <section style={{ gridColumn: "span 12", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 20px 16px" }}>
+      <div className="dg-head" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
           {/* the title IS the metric switch */}
-          <div style={{ display: "flex", gap: 3, padding: 3, marginLeft: -3, borderRadius: 10, background: "var(--sunk)", border: "1px solid var(--line)", width: "fit-content" }}>
+          <div className="dg-tabs" style={{ display: "flex", gap: 3, padding: 3, marginLeft: -3, borderRadius: 10, background: "var(--sunk)", border: "1px solid var(--line)", width: "fit-content" }}>
             <button onClick={() => { setMetric("doors"); setSel(null); }} style={tabBtn("doors")}>Dører per {unit}</button>
             <button onClick={() => { setMetric("sales"); setSel(null); }} style={tabBtn("sales")}>Salg per {unit}</button>
           </div>
-          <p style={SUB}>{isSales ? "rekrutteringer mot normalen · median av 4 like uker" : "mot normalen for samme " + unit + " · median av 4 like uker"}</p>
+          <p className="dg-sub detail-only" style={SUB}>{isSales ? "rekrutteringer mot normalen · median av 4 like uker" : "mot normalen for samme " + unit + " · median av 4 like uker"}</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, font: "400 11px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
+        <div className="dg-right legend-row" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div className="legend-row" style={{ display: "flex", alignItems: "center", gap: 12, font: "400 11px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
             {isSales
               ? [["salg", "var(--accent)"], ["normal", "transparent"]].map(([l, c]) => (
                   <span key={l} style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 14, height: c === "transparent" ? 0 : 3, borderRadius: 2, background: c, borderTop: c === "transparent" ? "1.5px dashed var(--tx3)" : "0" }} />{l}</span>))
               : [["over", "var(--pos)"], ["som normal", "var(--accent)"], ["under", "var(--neg)"], ["normal", "transparent"]].map(([l, c]) => (
                   <span key={l} style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: c, border: c === "transparent" ? "1px solid var(--line2)" : "0" }} />{l}</span>))}
           </div>
-          <div style={{ display: "flex", padding: 3, borderRadius: 9, background: "var(--sunk)", border: "1px solid var(--line)" }}>
+          <div className="dg-variant" style={{ display: "flex", padding: 3, borderRadius: 9, background: "var(--sunk)", border: "1px solid var(--line)" }}>
             {(["enkel", "detaljert"] as const).map((v) => (
               <button key={v} onClick={() => { setVariant(v); setSel(null); }} style={{ height: 26, padding: "0 12px", border: 0, borderRadius: 7, cursor: "pointer", font: "500 11.5px 'IBM Plex Sans', sans-serif", background: variant === v ? "var(--accent)" : "transparent", color: variant === v ? "#fff" : "var(--tx2)" }}>{v === "enkel" ? "Enkel" : "Detaljert"}</button>
             ))}
@@ -129,10 +130,22 @@ export function DayGraph({ daily, curve, outcome, staff }: {
       </div>
 
       {/* chart area */}
-      <div ref={wrapRef} style={{ display: "flex", alignItems: "flex-end", gap: 4, height: H, marginTop: 18, paddingLeft: 38, position: "relative" }}
+      <div ref={wrapRef} className="bar-row" style={{ display: "flex", alignItems: "flex-end", gap: 4, height: H, marginTop: 18, paddingLeft: 38, position: "relative" }}
            onMouseMove={isSales ? (e) => { const el = wrapRef.current; if (!el) return; const r = el.getBoundingClientRect(); const frac = Math.min(1, Math.max(0, (e.clientX - r.left - 38) / (r.width - 38))); setHover(Math.round(frac * (bars.length - 1))); } : undefined}
-           onMouseLeave={() => setHover(null)}>
-        <div style={{ position: "absolute", left: 0, top: -8, bottom: 0, width: 34, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", font: "400 10px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
+           onMouseLeave={() => setHover(null)}
+           /* A bar is 6px wide on a phone and the gaps take nearly half the
+              width, so a finger misses more often than it hits. A tap that
+              lands anywhere but on a bar picks the nearest day instead. */
+           onClick={(e) => {
+             if (e.target !== e.currentTarget) return;
+             const el = wrapRef.current; if (!el) return;
+             const r = el.getBoundingClientRect();
+             const frac = Math.min(1, Math.max(0, (e.clientX - r.left - 38) / (r.width - 38)));
+             const i = Math.round(frac * (bars.length - 1));
+             if (isSales) setHover(i);
+             else setSel(sel === i ? null : i);
+           }}>
+        <div style={{ position: "absolute", left: 0, top: -8, bottom: 0, width: 34, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
           {yTicks.map((y, i) => <span key={i}>{n(y)}</span>)}
         </div>
 
@@ -153,7 +166,7 @@ export function DayGraph({ daily, curve, outcome, staff }: {
               {hover != null && <line x1={X(hover)} x2={X(hover)} y1="0" y2={H} stroke="var(--tx2)" strokeOpacity="0.35" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />}
             </svg>
             {hover != null && sales[hover] && (
-              <div style={{ position: "absolute", top: 0, left: `${(hover / Math.max(1, bars.length - 1)) * 100}%`, transform: "translateX(-50%)", pointerEvents: "none", background: "var(--panel2)", border: "1px solid var(--line2)", borderRadius: 7, padding: "5px 9px", whiteSpace: "nowrap", boxShadow: "0 8px 20px rgba(0,0,0,.4)" }}>
+              <div style={{ position: "absolute", top: 0, left: `${(hover / Math.max(1, bars.length - 1)) * 100}%`, transform: "translateX(-50%)", pointerEvents: "none", background: "var(--panel2)", border: "1px solid var(--line2)", borderRadius: 7, padding: "4px 8px", whiteSpace: "nowrap", boxShadow: "0 8px 20px rgba(0,0,0,.4)" }}>
                 <div style={{ font: "600 11px/1.3 'IBM Plex Sans', sans-serif" }}>{sales[hover].label}</div>
                 <div style={{ font: "400 10.5px/1.3 'IBM Plex Mono', monospace", color: "var(--tx2)", marginTop: 2 }}><span style={{ color: "var(--accent)" }}>{n(sales[hover].v)}</span> salg · normal {n(sales[hover].normal)}</div>
               </div>
@@ -164,30 +177,36 @@ export function DayGraph({ daily, curve, outcome, staff }: {
             const doorsH = `${Math.min(100, (b.doors / max) * 100)}%`;
             const normalH = `${Math.min(100, (b.normal / max) * 100)}%`;
             return (
-              <div key={i} onClick={() => setSel(sel === i ? null : i)} title={`${b.label}: ${n(b.doors)} dører (normal ${n(b.normal)})`}
+              <div key={i} {...clickable(() => setSel(sel === i ? null : i), `${b.label}: ${n(b.doors)} dører, normalt ${n(b.normal)}`)} title={`${b.label}: ${n(b.doors)} dører (normal ${n(b.normal)})`}
                    style={{ flex: 1, position: "relative", height: "100%", display: "flex", alignItems: "flex-end", cursor: "pointer", opacity: sel != null && sel !== i ? 0.42 : 1, transition: "opacity .3s ease" }}>
                 {b.cls === "under" && <div style={{ position: "absolute", left: 1, right: 1, bottom: doorsH, height: `calc(${normalH} - ${doorsH})`, border: "1px dashed var(--neg)", borderBottom: 0, borderRadius: "2px 2px 0 0", opacity: 0.5, zIndex: 1 }} />}
                 <div style={{ position: "absolute", left: 1, right: 1, bottom: normalH, height: 2, background: "var(--tx)", boxShadow: "0 0 0 1px rgba(0,0,0,.45)", zIndex: 2 }} />
-                <div style={{ position: "relative", width: "100%", height: doorsH, borderRadius: "3px 3px 0 0", background: barColor(b.cls), boxShadow: sel === i ? "0 0 0 2px var(--accent2)" : "none", transformOrigin: "bottom", animation: "dc-barRise .5s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 12}ms`, transition: "height .35s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease" }} />
+                <div style={{ position: "relative", width: "100%", height: doorsH, borderRadius: "3px 3px 0 0", background: barColor(b.cls), boxShadow: sel === i ? "0 0 0 2px var(--accent2)" : "none", transformOrigin: "bottom", animation: "dc-barRise 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 12}ms`, transition: "height .35s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease" }} />
               </div>
             );
           })
         )}
       </div>
       <div style={{ display: "flex", gap: 4, marginTop: 8, paddingLeft: 38, font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
-        {bars.map((b, i) => <span key={i} style={{ flex: 1, minWidth: 0, textAlign: "center", whiteSpace: "nowrap" }}>{b.showLabel ? (enkel ? b.label : b.short) : ""}</span>)}
+        {/* every other date label is dropped on a phone: eight of them in
+            350px ran into each other */}
+        {(() => { let k = -1; return bars.map((b, i) => {
+          if (b.showLabel) k += 1;
+          return <span key={i} data-lab={b.showLabel ? (k % 2 === 1 ? "alt" : "main") : undefined}
+                       style={{ flex: 1, minWidth: 0, textAlign: "center", whiteSpace: "nowrap" }}>{b.showLabel ? (enkel ? b.label : b.short) : ""}</span>;
+        }); })()}
       </div>
 
       {/* doors: click a bar for its outcome split */}
       {detail && (
-        <div style={{ overflow: "hidden", animation: "dc-expandIn .42s cubic-bezier(.2,.8,.2,1) both" }}>
-          <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 13, background: "var(--sunk)", border: "1px solid var(--line)", display: "grid", gridTemplateColumns: "190px 1fr 210px", gap: 24, alignItems: "center" }}>
+        <div style={{ overflow: "hidden", animation: "dc-expandIn 0.2s cubic-bezier(.2,.8,.2,1) both" }}>
+          <div style={{ marginTop: 16, padding: "16px 16px", borderRadius: 13, background: "var(--sunk)", border: "1px solid var(--line)", display: "grid", gridTemplateColumns: "190px 1fr 210px", gap: 24, alignItems: "center" }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 3, height: 14, borderRadius: 2, background: "var(--accent)" }} />
-                <span style={{ font: "500 10px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" }}>{detail.slot}</span>
+                <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" }}>{detail.slot}</span>
               </div>
-              <div style={{ font: "600 34px/1 'IBM Plex Mono', monospace", marginTop: 10, animation: "dc-popIn .4s cubic-bezier(.2,.8,.2,1) both" }}>{detail.total}</div>
+              <div style={{ font: "600 34px/1 'IBM Plex Mono', monospace", marginTop: 10, animation: "dc-popIn 0.2s cubic-bezier(.2,.8,.2,1) both" }}>{detail.total}</div>
               <div style={{ font: "400 11.5px/1.4 'IBM Plex Sans', sans-serif", color: "var(--tx2)", marginTop: 6 }}>dører · normal {detail.normal}</div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 10, padding: "4px 8px", borderRadius: 7, background: detail.deltaBg, color: detail.deltaColor, font: "600 11px/1 'IBM Plex Mono', monospace" }}>{detail.delta}</div>
             </div>
@@ -196,7 +215,7 @@ export function DayGraph({ daily, curve, outcome, staff }: {
                 <div key={r.label} style={{ display: "grid", gridTemplateColumns: "96px 1fr 58px 52px", gap: 12, alignItems: "center" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8, font: "400 12px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}><span style={{ width: 8, height: 8, borderRadius: 3, background: r.c }} />{r.label}</span>
                   <div style={{ height: 9, borderRadius: 5, background: "var(--panel2)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 5, width: r.w, background: r.c, transformOrigin: "left", animation: "dc-barGrow .55s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${k * 60}ms` }} />
+                    <div style={{ height: "100%", borderRadius: 5, width: r.w, background: r.c, transformOrigin: "left", animation: "dc-barGrow 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${k * 60}ms` }} />
                   </div>
                   <span style={{ textAlign: "right", font: "500 12px/1 'IBM Plex Mono', monospace" }}>{n(r.n)}</span>
                   <span style={{ textAlign: "right", font: "400 11.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{r.pct}</span>
@@ -204,8 +223,8 @@ export function DayGraph({ daily, curve, outcome, staff }: {
               ))}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingLeft: 22, borderLeft: "1px solid var(--line)" }}>
-              <div><div style={{ font: "500 9px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" }}>Kontaktrate</div><div style={{ font: "600 17px/1 'IBM Plex Mono', monospace", marginTop: 7 }}>{detail.contact}</div></div>
-              <div><div style={{ font: "500 9px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" }}>Selgere i felt</div><div style={{ font: "600 17px/1 'IBM Plex Mono', monospace", marginTop: 7 }}>{detail.staff}</div></div>
+              <div><div style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" }}>Kontaktrate</div><div style={{ font: "600 17px/1 'IBM Plex Mono', monospace", marginTop: 7 }}>{detail.contact}</div></div>
+              <div><div style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" }}>Selgere i felt</div><div style={{ font: "600 17px/1 'IBM Plex Mono', monospace", marginTop: 7 }}>{detail.staff}</div></div>
               <button onClick={() => setSel(null)} className="dc-hover" style={{ marginTop: 2, height: 30, borderRadius: 9, border: "1px solid var(--line2)", background: "transparent", color: "var(--tx2)", font: "500 11.5px 'IBM Plex Sans', sans-serif", cursor: "pointer" }}>Lukk</button>
             </div>
           </div>
@@ -216,15 +235,15 @@ export function DayGraph({ daily, curve, outcome, staff }: {
       {!detail && enkel && (
         <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-            <span style={{ font: "500 9.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)" }}>Avvik i perioden</span>
-            <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{isSales ? "hold over grafen for tall" : "klikk en stolpe for utfall"} · terskel ±8 %</span>
+            <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--tx3)" }}>Avvik i perioden</span>
+            <span className="graph-hint" style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{isSales ? "hold over grafen for tall" : "klikk en stolpe for utfall"} · terskel ±8 %</span>
           </div>
           {anomalies.map((a, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "96px 62px 1fr auto", gap: 12, alignItems: "center", padding: "9px 0 0" }}>
+            <div key={i} className="avvik-row" style={{ display: "grid", gridTemplateColumns: "96px 62px 1fr auto", gap: 12, alignItems: "center", padding: "9px 0 0" }}>
               <span style={{ font: "500 11px/1 'IBM Plex Mono', monospace", color: "var(--tx2)" }}>{a.window}</span>
               <span style={{ font: "600 11.5px/1 'IBM Plex Mono', monospace", color: a.color }}>{a.delta}</span>
               <span style={{ font: "400 11.5px/1.4 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{a.cause}</span>
-              <span style={{ font: "500 10px/1 'IBM Plex Sans', sans-serif", padding: "4px 7px", borderRadius: 6, background: a.stateBg, color: a.stateColor }}>{a.state}</span>
+              <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "4px 8px", borderRadius: 6, background: a.stateBg, color: a.stateColor }}>{a.state}</span>
             </div>
           ))}
         </div>

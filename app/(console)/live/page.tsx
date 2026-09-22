@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import {
   BatteryLow, Crosshair, MousePointerClick, Pause, Play, Radio, Rewind, FastForward,
@@ -109,9 +110,9 @@ function LiveInner() {
     : "--:--";
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="live-body flex h-full min-h-0" data-picked={person ? "1" : "0"}>
       {/* ── roster: the pick list ─────────────────────────────────────────── */}
-      <aside className="flex w-[272px] flex-none flex-col border-r border-line">
+      <aside className="live-rail flex w-[272px] flex-none flex-col border-r border-line">
         <div className="flex flex-none items-center gap-2 border-b border-line px-3 py-2.5">
           <Radio size={12} className="text-ja" />
           <span className="t-label">Pålogget</span>
@@ -138,10 +139,10 @@ function LiveInner() {
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5">
                     <span className="truncate text-[12px] font-medium">{p.name}</span>
-                    {p.flag && <TriangleAlert size={9} className="flex-none text-warn" />}
+                    {p.flag && <TriangleAlert size={12} className="flex-none text-warn" />}
                   </span>
                   <span className="block truncate font-mono text-[9.5px] text-fg3">
-                    {p.areaName} · {p.isMoving ? `${n1(p.speed)} km/t` : "stillestående"}
+                    {p.areaName} · {p.isMoving ? `${n1(p.speed)} km/t` : "stillestående"}
                   </span>
                 </span>
                 <span className="flex flex-col items-end gap-1">
@@ -157,14 +158,14 @@ function LiveInner() {
         </div>
 
         <p className="flex-none border-t border-line px-3 py-2 text-[10px] leading-snug text-fg3">
-          Batteri står ved siden av signalalder med vilje — et flatt batteri forklarer manglende GPS.
+          Flatt batteri er den vanligste grunnen til at GPS-signalet mangler.
         </p>
       </aside>
 
       {/* ── map ───────────────────────────────────────────────────────────── */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="live-map flex min-w-0 flex-1 flex-col">
         {/* subject bar */}
-        <div className="flex flex-none flex-wrap items-center gap-3 border-b border-line px-4 py-2.5">
+        <div className="live-subject flex flex-none flex-wrap items-center gap-3 border-b border-line px-4 py-2.5">
           {d ? (
             <>
               <Avatar initials={d.initials} size={26} tone="bg-iris/25 text-iris-soft" />
@@ -177,7 +178,7 @@ function LiveInner() {
 
               {d.live && (
                 <span className="flex items-center gap-1.5 rounded-md bg-ja/15 px-2 py-[3px] text-[10.5px] font-semibold text-ja">
-                  <Wifi size={10} /> LIVE · socket tilkoblet
+                  <Wifi size={12} /> LIVE
                 </span>
               )}
             </>
@@ -185,7 +186,7 @@ function LiveInner() {
             <span className="text-[13px] text-fg3">Ingen valgt</span>
           )}
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="live-controls ml-auto flex items-center gap-2">
             <select
               value={activeDate}
               onChange={(e) => setDate(e.target.value)}
@@ -207,15 +208,15 @@ function LiveInner() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1">
+        <div className="live-canvas min-h-0 flex-1">
           {!person ? (
-            <EmptyState />
+            <EmptyState first={rows.data?.[0]} onPick={(id) => { setPerson(id); setDate(null); }} />
           ) : track.isPending ? (
             <div className="h-full animate-pulse bg-s1" />
           ) : d ? (
             <TrackMap track={d} livePoints={livePoints} progress={progress} follow={follow} />
           ) : (
-            <p className="p-6 text-[13px] text-nei">Kunne ikke hente sporet.</p>
+            <ErrorState what="sporet" onRetry={() => track.refetch()} />
           )}
         </div>
 
@@ -282,7 +283,7 @@ function LiveInner() {
               <Stat k="I bevegelse" v={`${Math.floor(d.summary.movingMin / 60)} t ${d.summary.movingMin % 60} min`} />
               <Stat k="Stillestående" v={`${d.summary.stoppedMin} min`} />
               <Stat k="Dører/km" v={n1(d.summary.doorsPerKm)} />
-              <Stat k="Snittfart" v={`${n1(d.summary.avgSpeed)} km/t`} />
+              <Stat k="Snittfart" v={`${n1(d.summary.avgSpeed)} km/t`} />
               <Stat k="Utenfor område" v={`${d.summary.outsideMin} min`} tone="text-ih" />
               <span className="ml-auto">{n(d.rawCount)} posisjoner → {n(allPoints.length)} forenklet</span>
             </div>
@@ -291,16 +292,16 @@ function LiveInner() {
       </div>
 
       {/* ── right rail ────────────────────────────────────────────────────── */}
-      <aside className="flex w-[292px] flex-none flex-col gap-3 overflow-y-auto border-l border-line p-3">
-        {d ? (
+      {d && (
+      <aside className="live-detail flex w-[292px] flex-none flex-col gap-3 overflow-y-auto border-l border-line p-3">
           <>
             <Panel title="Øyeblikket" live={d.live}>
               <KV k="Klokken" v={clock} />
-              <KV k="Fart" v={`${n1(head?.speed ?? 0)} km/t`} />
+              <KV k="Fart" v={`${n1(head?.speed ?? 0)} km/t`} />
               <KV k="Retning" v={`${head?.heading ?? 0}°`} />
               <KV k="Nøyaktighet" v={`±${head?.accuracy ?? 0} m`} />
               <KV k="Dører så langt" v={n(doorsSoFar)} />
-              <KV k="Batteri" v={`${head?.battery ?? 0} %`} />
+              <KV k="Batteri" v={`${head?.battery ?? 0} %`} />
             </Panel>
 
             {lastKnock && (
@@ -337,33 +338,33 @@ function LiveInner() {
               </div>
             </Panel>
           </>
-        ) : (
-          <div className="rounded-lg border border-line bg-s1 p-4">
-            <MousePointerClick size={16} className="text-iris-soft" />
-            <p className="mt-2.5 text-[12.5px] leading-relaxed text-fg2">
-              Velg én person for å tegne sporet deres. Kartet viser bevisst bare én om gangen —
-              alle spor samtidig gjør kartet uleselig.
-            </p>
-          </div>
-        )}
       </aside>
+      )}
     </div>
   );
 }
 
-function EmptyState() {
+/** Says what to do and lets you do it. The old copy explained sockets and
+ *  database reads, which is not a sales chief's problem, and the same message
+ *  was repeated in the panel beside it. */
+function EmptyState({ first, onPick }: { first?: { id: string; name: string }; onPick: (id: string) => void }) {
   return (
-    <div className="grid h-full place-items-center px-6">
-      <div className="max-w-[460px] text-center">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-iris/15">
-          <MousePointerClick size={22} className="text-iris-soft" />
+    <div className="live-empty grid h-full place-items-center px-6 py-8">
+      <div className="max-w-[380px] text-center">
+        <div className="live-empty-icon mx-auto grid h-10 w-10 place-items-center rounded-xl bg-iris/15">
+          <MousePointerClick size={16} className="text-iris-soft" />
         </div>
-        <h3 className="mt-4 t-h3">Velg en person i lista</h3>
-        <p className="mt-2.5 text-[13px] leading-relaxed text-fg2">
-          Sporet hentes fra databasen for dagen som er valgt, og tegnes fra dagens start.
-          Er personen fortsatt ute, kobles en socket til og nye posisjoner legges på det
-          samme sporet fortløpende.
+        <h3 className="mt-3.5 t-h3">Velg en person i lista</h3>
+        <p className="live-empty-hint mx-auto mt-2 max-w-[34ch] text-[13px] leading-relaxed text-fg2">
+          Kartet viser én person om gangen, så sporet er lesbart.
         </p>
+        {first && (
+          <button type="button" onClick={() => onPick(first.id)}
+                  className="lift mt-4 inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-[12.5px] font-semibold text-white"
+                  style={{ background: "var(--iris)" }}>
+            Vis {first.name}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -411,10 +412,10 @@ function Btn({ children, onClick, primary, disabled }: {
 }
 
 function Battery({ pct }: { pct: number }) {
-  const tone = pct < 15 ? "var(--crit)" : pct < 40 ? "var(--ih)" : "var(--ja)";
+  const tone = pct < 15 ? "var(--crit)" : pct < 40 ? "var(--warn)" : "var(--ok)";
   return (
     <span className="flex items-center gap-1">
-      {pct < 15 && <BatteryLow size={9} className="text-crit" />}
+      {pct < 15 && <BatteryLow size={12} className="text-crit" />}
       <span className="relative block h-[8px] w-[18px] rounded-[2px] border border-line2 p-[1px]">
         <span className="block h-full rounded-[1px]" style={{ width: `${pct}%`, background: tone }} />
       </span>

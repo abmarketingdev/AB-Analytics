@@ -7,14 +7,14 @@ const nf1 = new Intl.NumberFormat("nb-NO", { minimumFractionDigits: 1, maximumFr
 
 export const n = (v: number | null | undefined) => (v == null ? "–" : nf0.format(v));
 export const n1 = (v: number | null | undefined) => (v == null ? "–" : nf1.format(v));
-export const pct = (v: number | null | undefined) => (v == null ? "–" : `${nf1.format(v)} %`);
+export const pct = (v: number | null | undefined) => (v == null ? "–" : `${nf1.format(v)} %`);
 
 /** Signed delta, e.g. "+12,7 %" / "−4" — uses a real minus sign, not a hyphen. */
 export function delta(v: number, unit: "pct" | "pp" | "abs" = "abs") {
   const sign = v > 0 ? "+" : v < 0 ? "−" : "";
   const abs = Math.abs(v);
   const body = unit === "abs" ? nf0.format(abs) : nf1.format(abs);
-  const suffix = unit === "pct" ? " %" : unit === "pp" ? " pp" : "";
+  const suffix = unit === "pct" ? " %" : unit === "pp" ? " pp" : "";
   return `${sign}${body}${suffix}`;
 }
 

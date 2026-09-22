@@ -19,7 +19,7 @@
   /* text */
   --fg1: #f2f0f7;
   --fg2: #a8a2bc;
-  --fg3: #6e6885;
+  --fg3: #88839a;   /* was #6e6885 — 3.7:1, below AA for the 10–12px labels it carries */
 
   /* command — the authority colour, used BIG */
   --iris:      #7c5cfc;
@@ -27,15 +27,18 @@
   --iris-soft: #b8a5ff;
   --magenta:   #e85d9a;
 
-  /* outcome — locked to meaning, never decorative */
+  /* outcome — locked to meaning, never decorative.
+     Nei and ikke-hjemme are the two most common results of a normal day, so
+     they are calm. Alarm colours below are reserved for things that are wrong. */
   --ja:  #2dd4a7;
-  --nei: #f2545b;
-  --ih:  #f5a524;
+  --nei: #8b90a6;
+  --ih:  #c9a961;
   --fo:  #5b9df9;
 
-  /* severity reuses the outcome hues deliberately */
+  /* severity — only ever for something that needs a person to act */
   --crit: #f2545b;
   --warn: #f5a524;
+  --ok:   #2dd4a7;
 
   /* geometry */
   --r-sm: 8px;
@@ -56,6 +59,9 @@
 }
 
 @theme inline {
+  /* Hover feedback lands in 80ms. Anything slower reads as lag on a row you
+     are scanning, not as polish. */
+  --default-transition-duration: 80ms;
   --color-canvas: var(--canvas);
   --color-s1: var(--s1);
   --color-s2: var(--s2);
@@ -75,6 +81,7 @@
   --color-fo: var(--fo);
   --color-crit: var(--crit);
   --color-warn: var(--warn);
+  --color-ok: var(--ok);
 
   --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
@@ -88,7 +95,12 @@
 /* ── base ─────────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
 
-html, body {
+html, /* The smallest labels were 8.5px. Unreadable at arm's length, on any screen. */
+.text-\[8\.5px\], .text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .t-label {
+  font-size: 11px !important;
+}
+
+body {
   height: 100%;
 }
 
@@ -99,6 +111,9 @@ body {
   font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
+  /* every figure on the page lines up in its column, mono or not */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -290,11 +305,10 @@ h1, h2, h3, h4 {
 
 /* a new live event arriving in the feed */
 @keyframes knock-in {
-  0%   { opacity: 0; transform: translateY(-6px) scale(0.98); }
-  60%  { transform: translateY(0) scale(1.006); }
+  0%   { opacity: 0; transform: translateY(-6px); }
   100% { opacity: 1; transform: none; }
 }
-.knock-in { animation: knock-in 0.32s cubic-bezier(0.34, 1.3, 0.64, 1); }
+.knock-in { animation: knock-in 0.16s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* a breach appearing — the severity edge pulses once, then holds */
 @keyframes edge-pulse {
@@ -344,9 +358,14 @@ h1, h2, h3, h4 {
 .dc {
   --bg:#0b0b11; --panel:#14141d; --panel2:#1a1a25; --sunk:#0f0f17;
   --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.14);
-  --tx:#f3f3f8; --tx2:#9a9aac; --tx3:#63637a;
+  --tx:#f3f3f8; --tx2:#9a9aac; --tx3:#838395; /* tx3 was #63637a — 3.1:1, below AA */
   --accent:#7c5cff; --accent2:#c4b0ff; --accentsoft:rgba(124,92,255,.16);
   --pos:#3ddc97; --neg:#ff6b6b; --warn:#ffc043; --info:#5aa9ff; --pink:#ff7ab8;
+  /* door outcomes — a normal day is mostly nei and ikke-hjemme, so they must
+     not borrow the alarm colours above. */
+  --o-ja:#3ddc97; --o-nei:#8b90a6; --o-ih:#c9a961; --o-fo:#5aa9ff;
+  /* --accent is 4.2:1 on a panel, fine for fills, short of AA for text */
+  --accent-text:#9d85ff;
   --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.35);
   color: var(--tx);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
@@ -354,9 +373,11 @@ h1, h2, h3, h4 {
 .dc[data-theme="light"]{
   --bg:#f2f2f6; --panel:#ffffff; --panel2:#fbfbfd; --sunk:#f1f1f6;
   --line:rgba(12,12,26,.085); --line2:rgba(12,12,26,.16);
-  --tx:#14141d; --tx2:#5d5d70; --tx3:#8b8b9d;
+  --tx:#14141d; --tx2:#5d5d70; --tx3:#6d6d7c; /* tx3 was #8b8b9d — 3.4:1 on white */
   --accent:#6338f0; --accent2:#9d7bff; --accentsoft:rgba(99,56,240,.10);
   --pos:#0f9d63; --neg:#e04545; --warn:#c98200; --info:#2b74d6; --pink:#d94f92;
+  --o-ja:#0f9d63; --o-nei:#6b7186; --o-ih:#8a6d24; --o-fo:#2b74d6;
+  --accent-text:#5a30e0;
   --shadow:0 1px 2px rgba(12,12,26,.05), 0 6px 18px rgba(12,12,26,.06);
 }
 .dc[data-palette="aurora"]{--accent:#1fb8a6;--accent2:#7ff0dc;--accentsoft:rgba(31,184,166,.16);--pos:#4ade80;--neg:#fb7185;--warn:#fbbf24;--info:#38bdf8;--pink:#e879f9}
@@ -394,4 +415,554 @@ h1, h2, h3, h4 {
 
 @media (prefers-reduced-motion: reduce) {
   .dc *{animation-duration:.001ms!important;animation-iteration-count:1!important}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Phone layout. The console is built for a wide screen, so at
+   narrow widths the 12-column grids collapse to one column and the
+   shell bars drop the parts a phone cannot use. Nothing is removed
+   on desktop.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* every direct child of a 12-col page grid spans the full width */
+  .dc-page > * { grid-column: 1 / -1 !important; }
+  .dc-page { padding: 16px 14px 22px !important; gap: 12px !important; }
+  /* One big number, then the three supporting ones as full width rows.
+     Three across gave each of them 120px to hold a label, a figure, a chart
+     and a caption, which is where the "overwhelming" came from. As a row each
+     one gets the whole width: label left, figure right, chart under it. */
+  .kpi-band { grid-template-columns: 1fr !important; }
+  .kpi-primary { border-right: 0 !important; border-bottom: 1px solid var(--line); }
+  .kpi-sec {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    column-gap: 14px;
+    row-gap: 8px;
+    padding: 13px 16px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line);
+  }
+  .kpi-sec:last-child { border-bottom: 0; }
+  .kpi-sec > :nth-child(1) { grid-column: 1; }
+  .kpi-sec > :nth-child(2) { grid-column: 2; margin-top: 0 !important; justify-self: end; }
+  .kpi-sec > :nth-child(3) { grid-column: 1 / -1; margin-top: 0 !important; }
+  .kpi-sec > :nth-child(4) { grid-column: 1 / -1; margin-top: 0 !important; }
+
+  /* No physical keyboard, so the shortcut hints are noise. */
+  kbd { display: none !important; }
+
+  /* Four rows of controls stood between the card edge and the chart: the
+     metric tabs, a caption, a four item legend, then the detail toggle. The
+     wrapper collapses so the toggle sits beside the tabs and the legend runs
+     under both. */
+  .dg-head { display: grid !important; grid-template-columns: 1fr auto; gap: 10px !important; align-items: start; }
+  .dg-head > div:first-of-type { grid-column: 1; grid-row: 1; min-width: 0; }
+  .dg-right { display: contents !important; }
+  .dg-variant { grid-column: 2; grid-row: 1; }
+  .dg-head > .dg-right > .legend-row { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; row-gap: 6px; }
+  .dg-tabs { width: auto !important; margin-left: 0 !important; }
+  .dg-tabs > button,
+  .dg-variant > button {
+    white-space: nowrap;
+    font-size: 11.5px !important;
+    padding: 0 9px !important;
+  }
+  .dg-sub { font-size: 11px !important; }
+  /* Filters wrap onto a second line rather than scrolling sideways. A
+     scrolling container would clip the dropdowns, which open downwards. */
+  .filter-bar { flex-wrap: wrap; padding-inline: 14px !important; }
+  /* five filters were 350px of chrome above the first number on a phone */
+  .filter-toggle { display: inline-flex !important; }
+  .detail-toggle { display: inline-flex !important; }
+
+  /* A panel opens leftwards from its trigger. In the right hand column that
+     put its edge 9px past the screen, so those open rightwards instead. The
+     max-width is a backstop for any width this misses. */
+  .filter-pop { max-width: calc(100vw - 20px); }
+  .filter-group > *:nth-child(even) .filter-pop,
+  .pfilter-group > *:nth-child(even) .filter-pop { left: auto !important; right: 0 !important; }
+
+  /* Source order puts the filter group between the two switches, so opening
+     it stranded "30 dager" alone on one row and "Detaljer" three rows below.
+     Reordered: both switches share the top row, the filters sit under them,
+     and Nullstill closes the block. */
+  .filter-toggle { order: 1; }
+  .bar-spacer    { order: 2; }
+  .detail-toggle { order: 3; }
+  .filter-group  { order: 4; }
+  .filter-bar .dc-hoverline { order: 5; }
+  /* the running total is already in the status bar at the foot of the page */
+  .doors-total { display: none !important; }
+
+  /* Supporting figures are hidden until the Detaljer switch is on. They are
+     still in the DOM and still read by assistive tech when shown. */
+  html[data-detail="off"] .detail-only { display: none !important; }
+  /* the three metric slots reflow when one of them is hidden */
+  html[data-detail="off"] .mini-row { grid-template-columns: 1fr 1fr !important; }
+  /* the greeting was a third of the first screen before any number */
+  .page-head { align-items: center !important; gap: 10px !important; }
+  .page-head > div:first-child { flex: 1; min-width: 0; }
+  .page-head h2 { font-size: 21px !important; }
+  .page-head p { font-size: 11.5px !important; margin-top: 4px !important; }
+  .head-clock { display: none; }
+  /* stop a lone "%" dropping onto its own line in the small cells */
+  .kpi-sec > div:last-child { font-size: 11px !important; line-height: 1.35 !important; text-wrap: balance; }
+  [data-lab="alt"] { visibility: hidden; }
+  .graph-hint { display: none; }  /* "klikk en stolpe" is a mouse instruction */
+  /* date + change on one line, the reason under it, badge on the right */
+  .avvik-row { grid-template-columns: auto auto 1fr !important; row-gap: 3px !important; column-gap: 9px !important; }
+  .avvik-row > :nth-child(3) { grid-column: 1 / 3; grid-row: 2; }
+  .avvik-row > :nth-child(4) { grid-column: 3; grid-row: 1 / 3; justify-self: end; align-self: center; }
+  .filter-group[data-mobile-open="0"] { display: none !important; }
+  /* the person bar has two filters and no toggle, so it just wraps */
+  .pfilter-group { flex-wrap: wrap; border: 0 !important; background: transparent !important; gap: 8px; }
+  .pfilter-group > * { border-right: 0 !important; }
+  .pfilter-group > * > button {
+    border: 1px solid var(--line2) !important;
+    border-radius: 10px !important;
+    background: var(--sunk) !important;
+  }
+  /* an even two column grid, so the odd one out spans instead of dangling */
+  .filter-group[data-mobile-open="1"] {
+    width: 100%;
+    display: grid !important;
+    /* minmax(0,1fr), not 1fr: the buttons carry an inline min-width and a
+       plain 1fr track refuses to shrink below it, so the column ran past
+       the bar and took its dropdown off screen with it */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+  .filter-group[data-mobile-open="1"] > * { min-width: 0; }
+  .filter-group[data-mobile-open="1"] > * > button { min-width: 0 !important; }
+  .filter-group[data-mobile-open="1"] > *:nth-child(odd):last-child { grid-column: 1 / -1; }
+  .filter-group[data-mobile-open="1"] > * > button { width: 100%; }
+  .filter-group { flex-wrap: wrap; border: 0 !important; background: transparent !important; gap: 8px; }
+  .filter-group > * { border-right: 0 !important; }
+  .filter-group > * > button {
+    border: 1px solid var(--line2) !important;
+    border-radius: 10px !important;
+    background: var(--sunk) !important;
+    height: 42px !important;
+  }
+}
+
+
+@media (max-width: 900px) {
+  /* The side rail becomes a bottom bar, the way a phone expects navigation.
+     Main content keeps the full width instead of losing 62px to a rail. */
+  .app-body { flex-direction: column !important; }
+  .app-body > main { order: 1; }
+  /* Out of flow so it can slide without the page reflowing under it. */
+  .app-body { position: relative; }
+  .app-body > main { padding-bottom: 62px; }
+  .app-body[data-nav="hidden"] .nav-rail { transform: translateY(105%); }
+
+  .nav-rail {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 30;
+    background: var(--s1, var(--canvas));
+    transition: transform .22s cubic-bezier(.4, 0, .2, 1);
+    order: 2;
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: space-between;
+    gap: 2px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+    border-right: 0 !important;
+    border-top: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-rail::-webkit-scrollbar { display: none; }
+  .nav-rail > a { flex: 1 0 auto; min-width: 44px; }
+  .rail-toggle { display: none !important; }
+}
+
+/* Pressed feedback. A row that reacts on mouse-down feels responsive even
+   before the next screen has rendered. */
+.dc-hover:active { background: var(--sunk) !important; }
+.dc-liftrow:active { transform: scale(.994); }
+/* Rows are grid layouts with a bottom border, so the focus ring needs to sit
+   just inside them rather than overlapping the neighbouring row. */
+.dc-hover:focus-visible,
+.dc-liftrow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+
+/* A separator that never starts a line. Written inline as "a · b · c" the
+   wrap left a stray "·" hanging at the start of the second row. */
+.sev-list { display: inline-flex; flex-wrap: wrap; gap: 0 6px; }
+.sev-list > span:not(:last-child)::after { content: " ·"; color: var(--tx3); }
+
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+
+/* Visually hidden, still read aloud. Used for the per-page <h1>: every page
+   except the front page had no heading at all, so assistive tech had no title
+   to announce on arrival. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  /* The roster is a seven-column table about 865px wide, so on a phone the
+     last columns were cut off and unreachable. Each row becomes a small card:
+     the person on top, then status with the two numbers, then the deviation
+     bar full width. The sparkline and chevron go, since the row itself is the
+     link and the 132px sparkline was what pushed the table off the screen. */
+  .roster-head { display: none !important; }
+  .roster-row {
+    grid-template-columns: 1fr auto auto !important;
+    gap: 9px 12px !important;
+    padding: 13px 14px 13px 16px !important;
+  }
+  /* Three bare numbers floating to the right told you nothing. Each figure
+     gets its column header back, the way the desktop table has one. */
+  .roster-row { grid-template-columns: 1fr 1fr 1fr !important; }
+  .roster-row > :nth-child(2) { grid-column: 1 / -1; grid-row: 1; }
+  .roster-row > :nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+  .roster-row > :nth-child(5) { grid-column: 1; grid-row: 3; }
+  .roster-row > :nth-child(6) { grid-column: 2; grid-row: 3; }
+  .roster-row > :nth-child(4) { grid-column: 3; grid-row: 3; }
+  .rr-cell { text-align: left !important; }
+  .rr-cell::before {
+    content: attr(data-l);
+    display: block;
+    margin-bottom: 4px;
+    font: 500 10.5px/1 "IBM Plex Sans", sans-serif;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--tx3);
+  }
+  /* the +/- bar needs width to mean anything, so on a phone only the figure */
+  .rr-devbar { display: none !important; }
+  /* it is a flex row on desktop, so ::before would sit beside the value */
+  .rr-dev { display: block !important; }
+  .rr-dev > span { width: auto !important; text-align: left !important; }
+  /* The 30-day sparkline stays, on its own line: it is the one thing in the
+     row that shows direction rather than a single number. The chevron goes,
+     since on a phone the whole card is the tap target. */
+  .roster-row > :nth-child(7) { grid-column: 1 / -1; grid-row: 4; width: 100% !important; }
+  .roster-row { row-gap: 11px !important; }
+  .roster-row > :nth-child(8) { display: none; }
+}
+
+@media (max-width: 900px) {
+  /* Summary strips are four cells across on desktop. Two by two on a phone,
+     which keeps every figure readable instead of pushing the last one off. */
+  /* one number leads, two support, the chart takes the width it needs */
+  .sum-band { grid-template-columns: 1fr 1fr !important; }
+  .sum-primary { grid-column: 1 / -1; border-right: 0 !important; border-bottom: 1px solid var(--line); }
+  .sum-sec { padding: 12px 16px !important; }
+  .sum-sec:last-of-type { border-right: 0 !important; }
+  .sum-sec span[style*="30px"] { font-size: 22px !important; }
+  .sum-chart { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+  .sum-chart > div:last-child { flex-wrap: wrap; row-gap: 6px; }
+  /* neutral grey reads as a slab at full height, so the trend line gets
+     shorter on a phone where it is a supporting detail, not the point */
+  .roster-row svg[viewBox="0 0 132 30"] { height: 22px !important; opacity: .7; }
+  .dc-pad { padding: 16px !important; }
+}
+
+@media (max-width: 900px) {
+  /* Search, sort and the count sat on one 600px line. Search takes the first
+     line, sort and the count share the second. */
+  .roster-tools { flex-wrap: wrap; padding: 12px 14px !important; gap: 10px !important; }
+  .roster-tools > :nth-child(1) { min-width: 0 !important; width: 100%; }
+  .roster-tools > :nth-child(3) { display: none; }
+  .roster-tools > :nth-child(4) { margin-left: auto; }
+}
+
+@media (max-width: 900px) {
+  /* Six metric tiles across becomes two, so each number keeps its label. */
+  /* six metrics, two across, and each cell keeps a bottom rule so the grid
+     still reads as a grid once the right hand borders go */
+  .metric-strip { grid-template-columns: 1fr 1fr !important; }
+  .metric-strip > div {
+    padding: 12px 14px !important;
+    border-right: 0 !important;
+    box-shadow: inset -1px 0 0 var(--line), inset 0 -1px 0 var(--line);
+  }
+  .metric-strip > div:nth-child(2n) { box-shadow: inset 0 -1px 0 var(--line); }
+  .metric-strip > div:nth-last-child(-n+2) { box-shadow: inset -1px 0 0 var(--line); }
+  .metric-strip > div:last-child { box-shadow: none; }
+
+  /* Report builder: the form and the A4 preview sat side by side and the
+     preview was pushed off screen. They stack, form first. */
+  /* One scroller per page, and it is <main>. A nested scroller means the
+     page will not scroll under your thumb, and it breaks pull to refresh,
+     tap-the-tab-to-top and the bar that hides on scroll. */
+  .rep-split {
+    flex-direction: column !important;
+    height: auto !important;
+    flex: none !important;
+    overflow: visible !important;
+  }
+  .rep-split > * { flex: none !important; }
+  .rep-split > aside { width: 100% !important; border-right: 0 !important; border-bottom: 1px solid var(--line); }
+  /* stacking killed flex-1, so the A4 preview rendered at zero height */
+  .rep-preview { min-height: 78vh; }
+  .rep-preview > div:last-child { padding: 14px !important; }
+
+  /* Live: roster, map and the detail panel stack instead of three columns. */
+  .live-rail, .live-detail {
+    width: 100% !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* A phone screen is a list you tap into, not three panes stacked.
+     With nobody picked the subject bar held only "Ingen valgt" and two
+     disabled controls, and the map reserved a screenful of empty black, so
+     both are dropped and the list gets the height instead. Picking a person
+     brings them back with the map underneath. */
+  .live-body[data-picked="0"] .live-rail { max-height: none !important; }
+  /* The prompt belongs above the list, not hidden: it is the only thing
+     telling you what a tap does. The map canvas stays collapsed until
+     somebody is picked, so it costs one line, not a screen. */
+  .live-body[data-picked="0"] .live-map { order: -1; border-bottom: 1px solid var(--line); }
+  .live-body[data-picked="0"] .live-canvas { min-height: 0 !important; }
+  /* "Ingen valgt" plus a disabled date picker and a disabled Følg button is
+     100px of chrome for controls that cannot do anything yet */
+  .live-body[data-picked="0"] .live-subject { display: none !important; }
+
+  /* Stacking the panes killed the map's flex-1, so the canvas rendered 1px
+     tall on a phone: the one thing this page exists to show. It gets an
+     explicit height, and the list steps back so the map leads. */
+  .live-body[data-picked="1"] .live-rail { max-height: 26vh; }
+  .live-body[data-picked="1"] .live-canvas { min-height: 46vh; }
+  .live-subject { padding: 8px 14px !important; row-gap: 8px !important; }
+  /* ml-auto pushed these to the right of their own wrapped line, leaving a
+     hole where the name used to be */
+  .live-controls { margin-left: 0 !important; width: 100%; }
+  .live-controls select { flex: 1; min-width: 0; }
+  .live-empty { padding: 14px 16px !important; place-items: start !important; }
+  .live-empty-icon, .live-empty-hint { display: none !important; }
+  .live-empty > div { max-width: none !important; text-align: left !important; }
+  .live-empty h3 { font-size: 13.5px !important; }
+}
+@media (max-width: 480px) {
+}
+
+@media (max-width: 900px) {
+  /* Live is three columns on desktop. Stacking the panels only works if the
+     container stops being a row. */
+  .live-body {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
+  }
+  .live-body > * { flex: none !important; }
+
+  /* "Aktivitet i dag" was a five column table at 390px, so names came out as
+     "Amy…" and the headers wrapped to two lines. On a phone each chief is a
+     card: full name on its own line, then the three figures labelled. */
+  .at-head { display: none !important; }
+  .hide-sm { display: none !important; }
+
+  /* 4px gaps between 30 bars ate half the chart. Tighter gaps make each bar
+     a bigger target; the tap-anywhere handler covers the rest. */
+  .bar-row { gap: 1px !important; }
+
+  /* ml-auto strands a control on its own right-aligned row once the toolbar
+     wraps. On a phone it just joins the flow. */
+  .toolbar-end { margin-left: 0 !important; }
+
+  /* Name and id fought for one truncated line, so the id takes its own. */
+  .meta-own-line { display: block; margin-left: 0 !important; margin-top: 2px; }
+
+  /* A sentence cut mid word is worse than two lines. */
+  /* the folded section already draws the card, so the child drops its own */
+  .drill-body > section {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    border-top: 1px solid var(--line) !important;
+  }
+
+  /* The address was a flex sibling of the chip, so a long one wrapped to
+     wherever the chip happened to end and every row started somewhere
+     different. It takes its own line, aligned with the name above it. */
+  .feed-line { flex-wrap: wrap; row-gap: 2px; }
+  .feed-where { flex-basis: 100%; }
+
+  .wrap-sm {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  /* Six metric chips wrapped to two rows and pushed the list a screen down.
+     One row that scrolls sideways keeps them all reachable in 36px. */
+  .chip-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+    padding-bottom: 2px;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip-row > button { flex: 0 0 auto; }
+
+  /* Kampanjehelse had the same five column squeeze as the activity tree. */
+  .ch-head { display: none !important; }
+  .ch-row {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 11px 12px !important;
+  }
+  .ch-who { grid-column: 1 / -1; }
+  .ch-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+  .ch-spark { grid-column: 1 / -1; order: 3; height: 26px !important; }
+  .ch-n { text-align: left !important; }
+  .ch-cov { justify-content: flex-start !important; }
+  .ch-n::before {
+    content: attr(data-l);
+    display: block;
+    margin-bottom: 4px;
+    font: 500 10.5px/1 "IBM Plex Sans", sans-serif;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--tx3);
+  }
+  .ch-cov { display: block !important; }
+  .ch-cov > div { display: inline-block; width: 52px !important; vertical-align: middle; }
+  .ch-cov > span { vertical-align: middle; margin-left: 7px; }
+  .at-chief {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 11px 2px !important;
+  }
+  .at-who { grid-column: 1 / -1; }
+  .at-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+  /* the bar reads as a bar; it does not need a caption above it */
+  .at-pace { grid-column: 1 / -1; order: 3; }
+  .at-pace::before { display: none !important; }
+  .at-n { text-align: left !important; }
+  .at-n::before {
+    content: attr(data-l);
+    display: block;
+    margin-bottom: 4px;
+    font: 500 10.5px/1 "IBM Plex Sans", sans-serif;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--tx3);
+  }
+  .at-pace { display: block !important; }
+  .at-pace > div:first-of-type { display: inline-block; width: calc(100% - 54px); vertical-align: middle; }
+  .at-pace > span { vertical-align: middle; }
+
+  /* The four requirement cards on a dossier become two by two. */
+  .krav-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Chart legends and view toggles wrap rather than run off the edge. */
+  .legend-row { flex-wrap: wrap; row-gap: 8px; }
+  /* Tab strips scroll, which is fine here: they are one line with no popovers. */
+  .tab-strip { overflow-x: auto; scrollbar-width: none; }
+  .tab-strip::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 900px) {
+  /* The layer switcher floats over the map. On a phone the map is narrower
+     than the panel's natural position, so pull it in and cap its width. */
+  /* Three panes side by side left the map a 170px sliver, entirely covered
+     by its own layer switcher. They stack, and the switcher becomes a row of
+     chips across the top of the map instead of a column over it. */
+  .geo-body {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
+  }
+  .geo-body > * { flex: none !important; }
+  .geo-rail {
+    width: 100% !important;
+    max-height: 32vh;
+    overflow-y: auto;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line);
+  }
+  .geo-map { min-height: 54vh; }
+  .geo-stats {
+    width: 100% !important;
+    border-left: 0 !important;
+    border-top: 1px solid var(--line);
+  }
+
+  .map-overlay { left: 8px !important; top: 8px !important; right: 8px; max-width: calc(100% - 16px); }
+  .map-overlay > * { max-width: 100%; }
+  .layer-head { display: none; }
+  .layer-box {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px !important;
+  }
+  .layer-box::-webkit-scrollbar { display: none; }
+  .layer-box > button { flex: 0 0 auto; width: auto !important; white-space: nowrap; }
+  .legend-box { align-self: flex-start; }
+}
+
+@media (max-width: 900px) {
+  /* The map legend is a row of swatches. It wraps rather than running under
+     the edge of the screen, and the swatches shrink to fit. */
+  .map-legend { flex-wrap: wrap; row-gap: 6px; }
+  .map-legend > span > span:first-child { width: 22px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Touch. A finger needs roughly 44px; this console was drawn for a
+   mouse, so icon buttons were 15px and the sort chips 26px tall.
+   Sizes grow, nothing moves.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* bottom bar items were 40px tall */
+  .nav-rail > a { min-height: 48px; }
+
+  /* icon-only buttons in the top bar were 15x15 */
+  header button { min-width: 44px; min-height: 44px; }
+
+  /* filter chips were 42px */
+  .filter-group > * > button { min-height: 46px !important; }
+
+  /* any input under 16px makes iOS zoom the whole page on focus */
+  input, select, textarea { font-size: 16px !important; }
+  .roster-tools input { height: 24px; }
+  .roster-tools > :nth-child(1) { height: 44px !important; }
+
+  /* segmented controls: sort chips, view toggles, tabs */
+  .roster-tools button,
+  .tab-strip button,
+  .legend-row button { min-height: 40px; }
+
+}
+
+@media (max-width: 900px) {
+  /* Report builder controls were 32px tall inputs and selects. */
+  .rep-split input, .rep-split select { min-height: 44px; }
+  .rep-split label, .rep-split button { min-height: 44px; }
+
+  /* MapLibre ships its own 29px zoom buttons. */
+  .maplibregl-ctrl button, .maplibregl-ctrl-group button { width: 40px !important; height: 40px !important; }
+}
+
+@media (max-width: 900px) {
+  /* Metric chips, layer switches, breadcrumbs and back buttons were all
+     26–32px tall. Everything you tap inside a page gets a 40px floor. */
+  main button, main a, main select, main input { min-height: 40px; }
+  /* the reset button lives in the filter bar, not the page body */
+  .filter-bar button { min-height: 40px; }
+  /* the search field sits inside a 44px shell, so it must fill it to be tappable */
+  .roster-tools input { height: 100% !important; min-height: 0; }
+  /* except the chart bars, which are tall already and must keep their shape */
+  main .legend-row + * button,
+  main [role="button"][title] { min-height: 0; }
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Check, ChevronRight, Layers, Radio, Route, ShieldCheck, SlidersHorizontal,
@@ -45,7 +46,7 @@ export function DossierFull({ personId }: { personId: string }) {
   });
 
   if (q.isPending) return <div className="h-full animate-pulse bg-s1" />;
-  if (q.isError || !q.data) return <p className="p-6 text-[13px] text-nei">Kunne ikke hente dossier.</p>;
+  if (q.isError || !q.data) return <ErrorState what="dossieret" onRetry={() => q.refetch()} />;
 
   const {
     row, history, deviation: dev, teamMedianStart, thresholdChain, effective, checks,
@@ -71,7 +72,7 @@ export function DossierFull({ personId }: { personId: string }) {
       <div className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-4">
         <Link href="/personer"
               className="flex flex-none items-center gap-1.5 text-[12px] text-fg3 transition-colors hover:text-iris-soft">
-          <ArrowLeft size={13} /> Personer
+          <ArrowLeft size={16} /> Personer
         </Link>
         <div className="h-8 w-px bg-line" />
         <Avatar initials={row.initials} size={44} tone="bg-iris/25 text-iris-soft" />
@@ -85,12 +86,12 @@ export function DossierFull({ personId }: { personId: string }) {
           <span data-num className="rounded-md bg-s3 px-2 py-[3px] text-[10.5px] text-fg2">uke {row.tenureWeeks}</span>
           <span className={cn("flex items-center gap-1 rounded-md px-2 py-[3px] text-[10.5px] font-semibold",
                               row.online ? "bg-ja/18 text-ja" : "bg-s3 text-fg3")}>
-            <Radio size={9} /> {row.online ? "pålogget" : "frakoblet"}
+            <Radio size={12} /> {row.online ? "pålogget" : "frakoblet"}
           </span>
         </div>
         <Link href={`/live?replay=${row.id}`}
               className="ml-auto flex flex-none items-center gap-2 rounded-md border border-line2 px-3 py-2 text-[12px] text-fg2 transition-colors hover:border-iris hover:text-iris-soft">
-          <Route size={13} /> Se rute
+          <Route size={16} /> Se rute
         </Link>
       </div>
 
@@ -99,8 +100,8 @@ export function DossierFull({ personId }: { personId: string }) {
                          alert ? "bg-crit/6" : "bg-ja/5")}>
         <div className="flex flex-none items-center gap-2.5">
           {alert
-            ? <TriangleAlert size={18} className={statusTone} />
-            : <ShieldCheck size={18} className="text-ja" />}
+            ? <TriangleAlert size={16} className={statusTone} />
+            : <ShieldCheck size={16} className="text-ja" />}
           <span className={cn("text-[19px] font-extrabold leading-none tracking-tight", statusTone)}>
             {statusWord}
           </span>
@@ -185,11 +186,11 @@ export function DossierFull({ personId }: { personId: string }) {
                 sub={scoped ? `på ${scopedName}` : "alle kampanjer"} />
         <Metric label="Dører / dag" value={n1(row.doorsPerDay)}
                 limit={effective.minDoorsPerDay} pass={row.doorsPerDay >= effective.minDoorsPerDay} />
-        <Metric label="Ja-rate" value={`${n1(row.jaRate)} %`}
+        <Metric label="Ja-rate" value={`${n1(row.jaRate)} %`}
                 limit={effective.minYesRatePercent} unit=" %" pass={row.jaRate >= effective.minYesRatePercent} />
-        <Metric label="Samtalekonvertering" value={`${n1(row.convRate)} %`} sub="ja ÷ pitchet" />
+        <Metric label="Samtalekonvertering" value={`${n1(row.convRate)} %`} sub="ja ÷ pitchet" />
         <Metric label="Tempo" value={n1(row.pace)} sub="dører per aktiv time" />
-        <Metric label="Fulle dager" value={`${n1(row.fullDayPct)} %`}
+        <Metric label="Fulle dager" value={`${n1(row.fullDayPct)} %`}
                 sub={`grense ${Math.round(effective.fullDayDoors * (1 - DAY_TOLERANCE_PCT / 100))} dører`} />
       </div>
 
@@ -201,7 +202,7 @@ export function DossierFull({ personId }: { personId: string }) {
       {/* ── everything else, collapsed by default ──────────────────── */}
       <details className="group min-h-0 flex-1">
         <summary className="flex cursor-pointer list-none items-center gap-2 border-b border-line bg-s1 px-5 py-3 text-[12px] font-medium text-fg2 transition-colors hover:text-fg1">
-          <ChevronRight size={14} className="flex-none transition-transform group-open:rotate-90" />
+          <ChevronRight size={16} className="flex-none transition-transform group-open:rotate-90" />
           Avanserte detaljer
           <span className="min-w-0 truncate font-mono text-[10.5px] text-fg3">puls · arbeidsvindu · avvik · terskelkjede · integritet</span>
         </summary>
@@ -223,7 +224,7 @@ export function DossierFull({ personId }: { personId: string }) {
           <Panel title="Avvik fra egen normal"
                  sub={dev.baselineSource === "personal" ? "mot egen historikk" : "mot selskapsstandard"}
                  right={<span data-num className={cn("font-mono text-[11px]", dev.isAlert ? "text-crit" : "text-fg3")}>
-                   {dev.isAlert ? `serie ${dev.streakLen} · −${n1(dev.shortfallPct)} %` : "ingen serie"}
+                   {dev.isAlert ? `serie ${dev.streakLen} · −${n1(dev.shortfallPct)} %` : "ingen serie"}
                  </span>}>
             <DeviationChart rows={last60} baseline={dev.baseline} cutoff={dev.lowDayCutoff} />
             <p className="mt-3 text-[11.5px] leading-snug text-fg3">
@@ -233,7 +234,7 @@ export function DossierFull({ personId }: { personId: string }) {
           </Panel>
 
           <Panel title="Opptrapping mot kohort" sub="per ansiennitetsuke"
-                 right={<TrendingUp size={13} className="text-fg3" />}>
+                 right={<TrendingUp size={16} className="text-fg3" />}>
             <RampChart ramp={ramp} />
             <p className="mt-3 text-[11.5px] leading-snug text-fg3">
               Skiller «har aldri trappet opp» fra «har falt av» — to helt ulike samtaler, som ser
@@ -267,10 +268,10 @@ export function DossierFull({ personId }: { personId: string }) {
               ))}
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-line pt-3 text-[11px]">
-              <Knob label="Ja-rate min." value={`${n1(effective.minYesRatePercent)} %`} />
-              <Knob label="Kontaktrate min." value={`${n(effective.minContactRatePercent)} %`} />
+              <Knob label="Ja-rate min." value={`${n1(effective.minYesRatePercent)} %`} />
+              <Knob label="Kontaktrate min." value={`${n(effective.minContactRatePercent)} %`} />
               <Knob label="Full dag" value={`${n(effective.fullDayDoors)} dører`} />
-              <Knob label="Avviksgrense" value={`${n(effective.deviationThresholdPct)} %`} />
+              <Knob label="Avviksgrense" value={`${n(effective.deviationThresholdPct)} %`} />
               <Knob label="Dager på rad" value={n(effective.consecutiveDaysThreshold)} />
               <Knob label="Kilde" value={SCOPE_LABEL[effective.scope]} />
             </dl>
@@ -288,12 +289,12 @@ export function DossierFull({ personId }: { personId: string }) {
           </Panel>
 
           <Panel title="Integritet" sub="datakvalitet, ikke overvåking"
-                 right={<ShieldCheck size={13} className="text-fg3" />}>
+                 right={<ShieldCheck size={16} className="text-fg3" />}>
             <div className="flex flex-col gap-2 text-[12px]">
               <Split label="Nærhetsbrudd" value={n(integrity.proximityViolations)}
                      tone={integrity.proximityViolations > 5 ? "text-crit" : undefined} />
-              <Split label="GPS-dekning" value={`${n1(integrity.gpsCoverage)} %`} />
-              <Split label="Uverifiserte bank" value={`${n1(integrity.unverifiedPct)} %`} />
+              <Split label="GPS-dekning" value={`${n1(integrity.gpsCoverage)} %`} />
+              <Split label="Uverifiserte bank" value={`${n1(integrity.unverifiedPct)} %`} />
               <Split label="Median avstand til dør" value={`${n(integrity.medianDistance)} m`} />
               <Split label="Dager med bank-burst" value={n(integrity.burstDays)}
                      tone={integrity.burstDays > 2 ? "text-warn" : undefined} />
@@ -316,8 +317,8 @@ function CheckRow({ c }: { c: ThresholdCheck }) {
   return (
     <div className="flex items-center gap-1.5">
       {c.pass
-        ? <Check size={10} className="flex-none text-ja" />
-        : <X size={10} className="flex-none text-crit" />}
+        ? <Check size={12} className="flex-none text-ja" />
+        : <X size={12} className="flex-none text-crit" />}
       <span className="min-w-0 truncate text-fg3">{c.label}</span>
       <span data-num className={cn("ml-auto flex-none whitespace-nowrap pl-2 font-medium",
                                    c.pass ? "text-fg2" : "text-crit")}>
@@ -380,8 +381,8 @@ function Metric({
         {limit != null ? (
           <>
             {pass
-              ? <Check size={9} className="flex-none text-ja" />
-              : <X size={9} className="flex-none text-crit" />}
+              ? <Check size={12} className="flex-none text-ja" />
+              : <X size={12} className="flex-none text-crit" />}
             <span className="truncate">krav {n1(limit)}{unit}</span>
           </>
         ) : (
@@ -460,11 +461,11 @@ function DeviationChart({ rows, baseline, cutoff }: {
       })}
       <text x={W - PAD} y={y(baseline) - 5} textAnchor="end" fill="var(--iris-soft)"
             style={{ fontFamily: "var(--font-plex-mono)", fontSize: 9 }}>
-        normal {baseline.toFixed(1)}
+        normal {n1(baseline)}
       </text>
       <text x={W - PAD} y={y(cutoff) + 11} textAnchor="end" fill="var(--crit)"
             style={{ fontFamily: "var(--font-plex-mono)", fontSize: 9 }}>
-        lavgrense {cutoff.toFixed(1)}
+        lavgrense {n1(cutoff)}
       </text>
     </svg>
   );

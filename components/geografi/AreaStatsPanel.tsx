@@ -34,8 +34,8 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
       {/* headline */}
       <div className="grid grid-cols-2 gap-2">
         <Kpi label="Dører" value={n(s.doors)} />
-        <Kpi label="Banket" value={n(s.knocked.total)} sub={`${n1(pen)} %`} />
-        <Kpi label="Ja-rate" value={`${n1(s.knocked.ja_rate)} %`} tone="text-ja" />
+        <Kpi label="Banket" value={n(s.knocked.total)} sub={`${n1(pen)} %`} />
+        <Kpi label="Ja-rate" value={`${n1(s.knocked.ja_rate)} %`} tone="text-ja" />
         <Kpi label="Gjenstår" value={n(remaining)} tone="text-ih" />
       </div>
 
@@ -43,7 +43,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
       <div>
         <div className="flex items-baseline justify-between text-[11px]">
           <span className="t-label">Penetrasjon</span>
-          <span data-num className="text-fg2">{n1(pen)} %</span>
+          <span data-num className="text-fg2">{n1(pen)} %</span>
         </div>
         <div className="mt-1.5 h-2 overflow-hidden rounded-sm bg-s3">
           <div className="h-full rounded-sm bg-iris" style={{ width: `${Math.min(100, pen)}%` }} />
@@ -72,7 +72,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
           ))}
         </div>
         <p className="mt-2 border-t border-line pt-2 font-mono text-[10.5px] text-fg3">
-          kontaktrate <b className="font-medium text-fg1">{n1(contactRate)} %</b>
+          kontaktrate <b className="font-medium text-fg1">{n1(contactRate)} %</b>
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
             <Row label="Befolkning" value={n(s.demographics.population_total)} />
             <Row label="Giverpool 30–66" value={n(s.demographics.donor_pool_stable)} />
             <Row label="Snittalder" value={n1(s.demographics.mean_age)} />
-            <Row label="67 år +" value={`${n1(s.demographics.share_67_plus * 100)} %`} />
+            <Row label="67 år +" value={`${n1(s.demographics.share_67_plus * 100)} %`} />
           </div>
         </div>
       )}
@@ -92,7 +92,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
       {/* postal breakdown — parsed from address_text server-side */}
       {s.postals.length > 0 && (
         <div>
-          <span className="t-label flex items-center gap-1.5"><MapPin size={11} /> Postnummer</span>
+          <span className="t-label flex items-center gap-1.5"><MapPin size={12} /> Postnummer</span>
           <div className="mt-2 flex flex-col gap-1">
             {s.postals.map((p) => (
               <div key={p.postal_code} className="flex items-center gap-2 text-[11.5px]">
@@ -105,7 +105,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
                 </span>
                 <span data-num className="text-fg1">{n(p.total)}</span>
                 <span data-num className={cn("w-11 text-right", p.ja_rate >= 3 ? "text-ja" : "text-fg3")}>
-                  {n1(p.ja_rate)} %
+                  {n1(p.ja_rate)} %
                 </span>
               </div>
             ))}
@@ -115,7 +115,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
 
       {/* best hours — when is THIS neighbourhood actually home */}
       <div>
-        <span className="t-label flex items-center gap-1.5"><Clock size={11} /> Ikke hjemme per time</span>
+        <span className="t-label flex items-center gap-1.5"><Clock size={12} /> Ikke hjemme per time</span>
         <div className="mt-2 flex items-end gap-[3px]">
           {s.hours.map((v, i) => {
             const best = v === Math.min(...s.hours);
@@ -124,7 +124,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
                 <div
                   className={cn("w-full rounded-sm", best ? "bg-ja" : "bg-ih/55")}
                   style={{ height: `${8 + v * 44}px` }}
-                  title={`${14 + i}:00 — ${n1(v * 100)} % ikke hjemme`}
+                  title={`${14 + i}:00 — ${n1(v * 100)} % ikke hjemme`}
                 />
                 <span className="font-mono text-[9px] text-fg3">{14 + i}</span>
               </div>
@@ -140,7 +140,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
 
       {/* assignees */}
       <div>
-        <span className="t-label flex items-center gap-1.5"><Users size={11} /> Tildelt ({s.assignees.length})</span>
+        <span className="t-label flex items-center gap-1.5"><Users size={12} /> Tildelt ({s.assignees.length})</span>
         <div className="mt-2 flex flex-col gap-1">
           {s.assignees.map((p) => (
             <button
@@ -152,7 +152,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
               <span className="min-w-0 flex-1 truncate text-fg2">{p.name}</span>
               <span data-num className="text-fg1">{n(p.total)}</span>
               <span data-num className={cn("w-11 text-right", p.ja_rate >= 3 ? "text-ja" : "text-fg3")}>
-                {n1(p.ja_rate)} %
+                {n1(p.ja_rate)} %
               </span>
             </button>
           ))}
@@ -162,7 +162,7 @@ export function AreaStatsPanel({ s }: { s: AreaStats }) {
       {s.unassigned_contributors.length > 0 && (
         <div>
           <span className="t-label flex items-center gap-1.5 text-warn">
-            <UserPlus size={11} /> Banket uten tildeling
+            <UserPlus size={12} /> Banket uten tildeling
           </span>
           <p className="mt-1 text-[11px] leading-snug text-fg3">
             Har banket inne i dette området uten å være tildelt det.

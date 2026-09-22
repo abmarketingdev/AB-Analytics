@@ -76,7 +76,7 @@ function Builder() {
     setOn((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div className="rep-split flex min-h-0 flex-1">
       {/* controls */}
       <aside className="flex w-[300px] flex-none flex-col gap-5 overflow-y-auto border-r border-line p-4">
         <Group label="Periode">
@@ -112,12 +112,16 @@ function Builder() {
                               s.locked ? "cursor-default text-fg3" : "cursor-pointer hover:text-fg1",
                               on.includes(s.id) ? "text-fg1" : "text-fg3")}
               >
-                <span className={cn("grid h-3.5 w-3.5 flex-none place-items-center rounded-[3px] border",
+                <span className={cn("grid h-[18px] w-[18px] flex-none place-items-center rounded-[4px] border",
                                     on.includes(s.id) ? "border-iris bg-iris" : "border-line2")}>
-                  {on.includes(s.id) && <span className="text-[8px] font-bold text-white">✓</span>}
+                  {on.includes(s.id) && (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M5 12.5l4.5 4.5L19 7" />
+                    </svg>
+                  )}
                 </span>
                 {s.label}
-                {s.locked && <span className="ml-auto font-mono text-[9.5px] text-fg3">alltid med</span>}
+                {s.locked && <span className="ml-auto flex-none pl-2 font-mono text-[10.5px] text-fg3">alltid med</span>}
               </button>
             ))}
           </div>
@@ -126,18 +130,18 @@ function Builder() {
         <button
           type="button"
           className="lift mt-auto flex cursor-pointer items-center justify-center gap-2 rounded-md py-2.5 text-[13px] font-semibold text-white"
-          style={{ background: "linear-gradient(140deg,#7C5CFC,#5B3FD9)" }}
+          style={{ background: "var(--iris)" }}
         >
-          <Download size={14} /> Eksporter PDF
+          <Download size={16} /> Eksporter PDF
         </button>
       </aside>
 
       {/* preview */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="rep-preview flex min-h-0 flex-1 flex-col">
         <div className="flex flex-none items-center gap-3 border-b border-line px-4 py-2">
           <span className="t-label">Forhåndsvisning</span>
           <span className="font-mono text-[11px] text-fg3">A4 · side 1 av 3</span>
-          <span className="ml-auto text-[11px] text-fg3">
+          <span className="hide-sm ml-auto text-[11px] text-fg3">
             Det du ser er den faktiske sidelayouten.
           </span>
         </div>
@@ -156,7 +160,7 @@ function Builder() {
                   <p className="mt-0.5 text-[12px] text-fg2">{p.scope}</p>
                 </div>
                 <div className="grid h-10 w-10 place-items-center rounded-[10px]"
-                     style={{ background: "linear-gradient(140deg,#9b7fff,#5b3fd9)" }}>
+                     style={{ background: "var(--iris)" }}>
                   <span className="block h-[8px] w-[8px] rounded-full border-[1.5px] border-white/90" />
                 </div>
               </div>
@@ -165,7 +169,7 @@ function Builder() {
                 {[
                   { l: "Dører", v: n(p.summary.doors) },
                   { l: "Ja", v: n(p.summary.ja), tone: "text-ja" },
-                  { l: "Ja-rate", v: `${n1(p.summary.jaRate)} %` },
+                  { l: "Ja-rate", v: `${n1(p.summary.jaRate)} %` },
                   { l: "Selgere", v: n(p.summary.workers) },
                   { l: "Varsler", v: n(p.summary.alerts), tone: "text-warn" },
                   { l: "Kritiske", v: n(p.summary.critical), tone: "text-crit" },
@@ -185,7 +189,7 @@ function Builder() {
                       <span className="h-2 w-2 flex-none rounded-[2px]" style={{ background: c.color }} />
                       <span className="min-w-0 flex-1 truncate text-fg2">{c.name}</span>
                       <span data-num className="font-mono text-fg1">{n(c.doors)}</span>
-                      <span data-num className="w-14 text-right font-mono text-fg3">{n1(c.jaRate)} %</span>
+                      <span data-num className="w-14 text-right font-mono text-fg3">{n1(c.jaRate)} %</span>
                     </div>
                   ))}
                 </div>
@@ -250,8 +254,8 @@ function History() {
             <span className={cn("flex items-center gap-1.5 font-mono text-[11px]",
                                 r.status === "success" ? "text-fg3" : "text-crit")}>
               {r.status === "success"
-                ? <><CheckCircle2 size={11} className="text-ja" />{stamp(r.sentAt)}</>
-                : <><XCircle size={11} />feilet</>}
+                ? <><CheckCircle2 size={12} className="text-ja" />{stamp(r.sentAt)}</>
+                : <><XCircle size={12} />feilet</>}
             </span>
             <button type="button" className="cursor-pointer justify-self-end text-fg3 hover:text-iris-soft"
                     aria-label="Last ned PDF">

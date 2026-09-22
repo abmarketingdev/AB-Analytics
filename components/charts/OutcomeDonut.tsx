@@ -55,7 +55,7 @@ export function OutcomeDonut({ d }: { d: OutcomeMix }) {
   const active = slices.find((s) => s.key === hover);
   const centreValue = active ? n(active.value) : drill ? n(d.nei) : n1(d.ja_rate);
   const centreLabel = active
-    ? `${n1((active.value / total) * 100)} % · ${active.label}`
+    ? `${n1((active.value / total) * 100)} % · ${active.label}`
     : drill ? "nei totalt" : "% ja-rate";
 
   const hard = neiSlices.filter((_, i) => NEI_BREAKDOWN[i].hard).reduce((a, s) => a + s.value, 0);
@@ -114,7 +114,7 @@ export function OutcomeDonut({ d }: { d: OutcomeMix }) {
               <span className="h-[9px] w-[9px] flex-none rounded-[3px]" style={{ background: s.color }} />
               <span className="min-w-0 truncate text-fg2">{s.label}</span>
               <span data-num className="ml-auto font-medium text-fg1">{n(s.value)}</span>
-              <span data-num className="w-12 text-right text-fg3">{n1((s.value / total) * 100)} %</span>
+              <span data-num className="w-12 text-right text-fg3">{n1((s.value / total) * 100)} %</span>
             </button>
           ))}
         </div>
@@ -130,15 +130,15 @@ export function OutcomeDonut({ d }: { d: OutcomeMix }) {
             <ArrowLeft size={12} /> Alle utfall
           </button>
           <span className="ml-auto font-mono text-[10.5px] text-fg3">
-            hard <b className="font-medium text-nei">{n1((hard / d.nei) * 100)} %</b>
-            {" · "}strukturell <b className="font-medium text-ih">{n1(100 - (hard / d.nei) * 100)} %</b>
+            hard <b className="font-medium text-nei">{n1((hard / d.nei) * 100)} %</b>
+            {" · "}strukturell <b className="font-medium text-ih">{n1(100 - (hard / d.nei) * 100)} %</b>
           </span>
         </div>
       ) : (
         <div className="flex items-center gap-3 border-t border-line pt-2.5 font-mono text-[10.5px] text-fg3">
-          <span>kontaktrate <b className="font-medium text-fg1">{n1(d.contact_rate)} %</b></span>
+          <span>kontaktrate <b className="font-medium text-fg1">{n1(d.contact_rate)} %</b></span>
           <span className="ml-auto">samtalekonv. <b className="font-medium text-fg1">
-            {n1((d.ja / (d.ja + d.nei + d.folg_opp)) * 100)} %
+            {n1((d.ja / (d.ja + d.nei + d.folg_opp)) * 100)} %
           </b></span>
         </div>
       )}

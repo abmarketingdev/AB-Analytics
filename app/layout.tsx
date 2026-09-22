@@ -31,7 +31,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nb" data-density="comfortable">
+    /* translate="no": Chrome was auto-translating the Norwegian into English
+       and, worse, swapping text nodes underneath React, which is what throws
+       "removeChild: the node to be removed is not a child of this node". The
+       console is Norwegian for Norwegian users, so there is nothing to gain
+       from translating it and a crash to lose. */
+    <html lang="nb" translate="no" className="notranslate" data-density="comfortable">
       <head>
         {/* IBM Plex Sans powers the Kommandosenter (Claude Design port); the
             literal family name is needed because the port sets it inline. */}
@@ -39,7 +44,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${archivo.variable} ${plexMono.variable}`}>
+      {/* Extensions write their own attributes onto <body> before React
+          hydrates (ColorZilla adds cz-shortcut-listen, Bitdefender adds
+          bis_register), which React reports as a mismatch. This covers this
+          one element's attributes only, so a real mismatch anywhere inside
+          still surfaces. */}
+      <body suppressHydrationWarning className={`${archivo.variable} ${plexMono.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>

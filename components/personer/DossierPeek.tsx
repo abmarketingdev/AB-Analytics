@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Radio, TriangleAlert } from "lucide-react";
 import { fetchDossier } from "@/lib/api/people";
@@ -18,7 +19,7 @@ export function DossierPeek({ personId }: { personId: string }) {
   const q = useQuery({ queryKey: ["dossier", personId], queryFn: () => fetchDossier(personId) });
 
   if (q.isPending) return <div className="h-full animate-pulse bg-s1" />;
-  if (q.isError || !q.data) return <p className="p-4 text-[13px] text-nei">Kunne ikke hente dossier.</p>;
+  if (q.isError || !q.data) return <ErrorState what="dossieret" onRetry={() => q.refetch()} />;
 
   const { row, history, deviation: dev } = q.data;
   const last30 = history.slice(-30);
@@ -29,8 +30,8 @@ export function DossierPeek({ personId }: { personId: string }) {
   const statusTone = crit ? "text-crit" : warn ? "text-warn" : "text-ja";
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto p-5">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto p-5">
         {/* identity */}
         <div className="flex items-start gap-3.5">
           <Avatar initials={row.initials} size={48} tone="bg-iris/25 text-iris-soft" />
@@ -56,7 +57,7 @@ export function DossierPeek({ personId }: { personId: string }) {
           <span data-num className="rounded-md bg-s3 px-2 py-[3px] text-[10.5px] text-fg2">uke {row.tenureWeeks}</span>
           <span className={cn("flex items-center gap-1 rounded-md px-2 py-[3px] text-[10.5px] font-semibold",
                               row.online ? "bg-ja/18 text-ja" : "bg-s3 text-fg3")}>
-            <Radio size={9} /> {row.online ? "pålogget" : "frakoblet"}
+            <Radio size={12} /> {row.online ? "pålogget" : "frakoblet"}
           </span>
         </div>
 
@@ -64,7 +65,7 @@ export function DossierPeek({ personId }: { personId: string }) {
         <div className={cn("mt-5 rounded-xl border p-4",
                            crit ? "border-crit/40 bg-crit/8" : warn ? "border-warn/40 bg-warn/8" : "border-line bg-s2")}>
           <div className="flex items-center gap-2">
-            {(crit || warn) && <TriangleAlert size={14} className={cn("flex-none", statusTone)} />}
+            {(crit || warn) && <TriangleAlert size={16} className={cn("flex-none", statusTone)} />}
             <span className={cn("text-[14px] font-bold", statusTone)}>{statusWord}</span>
             <span data-num title="Tilsyn-score (0–100)"
                   className="ml-auto rounded bg-s3 px-1.5 py-[2px] font-mono text-[10px] text-fg3">
@@ -86,8 +87,8 @@ export function DossierPeek({ personId }: { personId: string }) {
         {/* three numbers, not six */}
         <div className="mt-4 grid grid-cols-3 gap-2.5">
           <Peek label="Dører" value={n(row.doors)} sub="30 dager" />
-          <Peek label="Ja-rate" value={`${n1(row.jaRate)} %`} sub="terskel 2,0"
-                tone={row.jaRate >= 2 ? "text-ja" : "text-nei"} />
+          <Peek label="Ja-rate" value={`${n1(row.jaRate)} %`} sub="terskel 2,0"
+                tone={row.jaRate >= 2 ? "text-ja" : "text-warn"} />
           <Peek label="Tempo" value={n1(row.pace)} sub="dører/time" />
         </div>
 
@@ -112,7 +113,7 @@ export function DossierPeek({ personId }: { personId: string }) {
 
         <div className="mt-4">
           <span className="t-label">Dagsklassifisering</span>
-          <div className="mt-2"><DayStrip days={last30.map((d) => d.dayClass)} size={9} /></div>
+          <div className="mt-2"><DayStrip days={last30.map((d) => d.dayClass)} size={12} /></div>
         </div>
       </div>
 
@@ -122,9 +123,9 @@ export function DossierPeek({ personId }: { personId: string }) {
           href={`/personer/${row.id}`}
           onClick={closeDrawer}
           className="flex items-center justify-center gap-2 rounded-lg py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ background: "linear-gradient(140deg,#7C5CFC,#5B3FD9)" }}
+          style={{ background: "var(--iris)" }}
         >
-          Åpne full profil <ArrowRight size={14} />
+          Åpne full profil <ArrowRight size={16} />
         </Link>
       </div>
     </div>

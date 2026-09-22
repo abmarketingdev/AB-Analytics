@@ -27,7 +27,7 @@ export function CampaignGate() {
       <div className="w-full max-w-[760px]">
         <div className="flex items-center gap-3">
           <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-iris/15 text-iris-soft">
-            <Flag size={17} />
+            <Flag size={16} />
           </span>
           <div>
             <h2 className="t-h2">Velg en kampanje</h2>
@@ -52,11 +52,11 @@ export function CampaignGate() {
                   <span className="block truncate text-[14px] font-semibold">{c.name}</span>
                   {w && (
                     <span data-num className="mt-0.5 block text-[11.5px] text-fg3">
-                      {n(w.doors)} dører · {n1(w.jaRate)} % ja · {n(w.remaining)} gjenstår
+                      {n(w.doors)} dører · {n1(w.jaRate)} % ja · {n(w.remaining)} gjenstår
                     </span>
                   )}
                 </span>
-                <ArrowRight size={15} className="flex-none text-fg3 transition-colors group-hover:text-iris-soft" />
+                <ArrowRight size={16} className="flex-none text-fg3 transition-colors group-hover:text-iris-soft" />
               </button>
             );
           })}

@@ -6,3 +6,6 @@ out
 next-env.d.ts
 .DS_Store
 
+
+# local test screenshots, not part of the app
+shots/

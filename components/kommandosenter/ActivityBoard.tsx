@@ -62,7 +62,7 @@ export function ActivityBoard({ chiefs, progress }: { chiefs: ChiefNode[]; progr
               className="grid w-full grid-cols-[186px_1fr] items-center gap-2 py-2 text-left transition-colors hover:bg-s2"
             >
               <span className="flex min-w-0 items-center gap-2">
-                <ChevronRight size={13} className={cn("flex-none text-fg3 transition-transform", cOpen && "rotate-90")} />
+                <ChevronRight size={16} className={cn("flex-none text-fg3 transition-transform", cOpen && "rotate-90")} />
                 <Crown size={12} className="flex-none text-iris-soft" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[12.5px] font-semibold">{c.name}</span>
@@ -73,7 +73,7 @@ export function ActivityBoard({ chiefs, progress }: { chiefs: ChiefNode[]; progr
               </span>
               <span className="flex items-center gap-4 justify-self-end pr-1 font-mono text-[11px] text-fg2">
                 <span><b className="font-medium text-fg1">{n(c.doors)}</b> dører</span>
-                <span className={c.jaRate >= 3 ? "text-ja" : undefined}>{n1(c.jaRate)} %</span>
+                <span className={c.jaRate >= 3 ? "text-ja" : undefined}>{n1(c.jaRate)} %</span>
                 <span className="text-fg3">{n1(c.pace)} d/t</span>
                 <span className="text-ja">● {c.online}</span>
               </span>
@@ -145,7 +145,7 @@ function TeamTrack({
           {i === 0 && <span className="truncate">{label}</span>}
         </span>
       ))}
-      <span className="absolute bottom-0 top-0 z-3 w-[2px] bg-nei" style={{ left: `${nowPct}%` }} />
+      <span className="absolute bottom-0 top-0 z-3 w-[2px] bg-iris" style={{ left: `${nowPct}%` }} />
     </span>
   );
 }
@@ -167,12 +167,12 @@ function MemberLine({ row, nowPct }: { row: MemberRow; nowPct: number }) {
           style={{ background: DAY_COLOR[row.dayClass] }}
           title={DAY_LABEL[row.dayClass]}
         />
-        {row.role !== "seller" && <Shield size={10} className="flex-none text-iris-soft" />}
+        {row.role !== "seller" && <Shield size={12} className="flex-none text-iris-soft" />}
         <span className="min-w-0 truncate text-[11.5px] text-fg2">{row.name}</span>
         {row.flag && (
-          <TriangleAlert size={10} className="flex-none text-warn" aria-label={FLAG_TEXT[row.flag]} />
+          <TriangleAlert size={12} className="flex-none text-warn" aria-label={FLAG_TEXT[row.flag]} />
         )}
-        {!row.online && <WifiOff size={10} className="flex-none text-fg3" aria-label="Frakoblet" />}
+        {!row.online && <WifiOff size={12} className="flex-none text-fg3" aria-label="Frakoblet" />}
       </span>
 
       <span className="relative block h-[9px] overflow-hidden rounded-sm bg-s2">
@@ -185,12 +185,12 @@ function MemberLine({ row, nowPct }: { row: MemberRow; nowPct: number }) {
             opacity: 0.85,
           }}
         />
-        <span className="absolute bottom-0 top-0 w-[1.5px] bg-nei/70" style={{ left: `${nowPct}%` }} />
+        <span className="absolute bottom-0 top-0 w-[1.5px] bg-iris/70" style={{ left: `${nowPct}%` }} />
       </span>
 
       <span className="flex items-center gap-3 justify-self-end font-mono text-[10.5px] text-fg3">
         <span className="w-9 text-right text-fg1">{n(row.doors)}</span>
-        <span className={cn("w-11 text-right", row.jaRate < 2 && "text-nei")}>{n1(row.jaRate)} %</span>
+        <span className={cn("w-11 text-right", row.jaRate < 2 && "text-warn")}>{n1(row.jaRate)} %</span>
         <span className="w-12 text-right">{n1(row.pace)} d/t</span>
       </span>
     </button>

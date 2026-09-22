@@ -20,7 +20,7 @@ export function NavRail() {
   return (
     <nav
       className={cn(
-        "flex flex-none flex-col items-stretch gap-1 border-r border-line bg-s1 py-3 transition-[width] duration-200",
+        "nav-rail flex flex-none flex-col items-stretch gap-1 border-r border-line bg-s1 py-3 transition-[width] duration-150",
         railExpanded ? "w-[220px] px-3" : "w-[62px] px-[10px]",
       )}
       aria-label="Hovednavigasjon"
@@ -36,15 +36,25 @@ export function NavRail() {
             href={item.href}
             title={railExpanded ? undefined : `${item.label} — ${item.job}`}
             aria-current={on ? "page" : undefined}
+            /* Tapping the tab you are already on takes you back to the top,
+               the way it does everywhere else on a phone. Long pages stop
+               being a one way trip. */
+            onClick={(e) => {
+              if (!on) return;
+              const main = document.querySelector("main");
+              if (!main || main.scrollTop === 0) return;
+              e.preventDefault();
+              main.scrollTo({ top: 0, behavior: "smooth" });
+            }}
             className={cn(
               "relative flex h-10 items-center gap-3 rounded-[10px] transition-colors",
               railExpanded ? "px-3" : "justify-center",
               on
-                ? "bg-linear-[140deg,rgba(124,92,252,0.28),rgba(91,63,217,0.18)] text-iris-soft shadow-[inset_0_0_0_1px_rgba(124,92,252,0.4)]"
+                ? "bg-[rgba(124,92,252,0.20)] text-iris-soft shadow-[inset_0_0_0_1px_rgba(124,92,252,0.4)]"
                 : "text-fg3 hover:bg-s2 hover:text-fg2",
             )}
           >
-            <Icon size={17} className="flex-none" />
+            <Icon size={16} className="flex-none" />
             {railExpanded && (
               <span className="truncate text-[13px] font-medium">{item.label}</span>
             )}
@@ -68,7 +78,7 @@ export function NavRail() {
         type="button"
         onClick={toggleRail}
         className={cn(
-          "mt-auto flex h-9 cursor-pointer items-center gap-3 rounded-[10px] text-fg3 transition-colors hover:bg-s2 hover:text-fg2",
+          "rail-toggle mt-auto flex h-9 cursor-pointer items-center gap-3 rounded-[10px] text-fg3 transition-colors hover:bg-s2 hover:text-fg2",
           railExpanded ? "px-3" : "justify-center",
         )}
         aria-label={railExpanded ? "Skjul navigasjon" : "Vis navigasjon"}

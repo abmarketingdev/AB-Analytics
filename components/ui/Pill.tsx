@@ -36,7 +36,7 @@ export function DeltaBadge({ children, dir }: { children: React.ReactNode; dir: 
       data-num
       className={cn(
         "rounded-full px-2 py-[3px] text-[10px] font-semibold",
-        dir === "up" ? "bg-ja/20 text-ja" : "bg-nei/20 text-nei",
+        dir === "up" ? "bg-ja/20 text-ja" : "bg-crit/20 text-crit",
       )}
     >
       {children}

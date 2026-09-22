@@ -29,11 +29,11 @@ export function CampaignRail({ rows }: { rows: CampaignRow[] }) {
           <span className="truncate font-semibold">{c.name}</span>
           <Sparkline values={c.spark} color={c.color} />
           <span data-num>{n(c.doors)}</span>
-          <span data-num className={c.ja_rate >= 3.5 ? "text-ja" : undefined}>{n1(c.ja_rate)} %</span>
+          <span data-num className={c.ja_rate >= 3.5 ? "text-ja" : undefined}>{n1(c.ja_rate)} %</span>
           <span data-num className="text-fg3">{n(c.remaining)}</span>
           <span>
             <span className="block h-[5px] overflow-hidden rounded-sm bg-s3">
-              <span className="block h-full rounded-sm transition-[width] duration-700 ease-out"
+              <span className="block h-full rounded-sm transition-[width] duration-150 ease-out"
                   style={{ width: `${c.coverage}%`, background: c.color }} />
             </span>
           </span>

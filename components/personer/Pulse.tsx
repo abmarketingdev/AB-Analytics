@@ -192,8 +192,8 @@ function Cell({ d, baseline }: { d: DayRow | null; baseline: number }) {
   const ratio = baseline > 0 ? d.doors / baseline : 1;
   return (
     <span
-      title={`${d.day} — ${n(d.doors)} dører · ${n1(ratio * 100)} % av egen normal · ${n(d.ja)} ja`}
-      className="h-[13px] w-[13px] cursor-pointer rounded-[2px] transition-transform hover:scale-125"
+      title={`${d.day} — ${n(d.doors)} dører · ${n1(ratio * 100)} % av egen normal · ${n(d.ja)} ja`}
+      className="h-[13px] w-[13px] cursor-pointer rounded-[2px] transition-opacity hover:opacity-70"
       style={{ background: pulseFill(ratio) }}
     />
   );

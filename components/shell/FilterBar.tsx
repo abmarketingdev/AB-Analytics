@@ -7,6 +7,8 @@ import {
 } from "@/lib/store/filter";
 import { TOTAL_DOORS } from "@/lib/mock/world";
 import { n } from "@/lib/format";
+import { Kbd } from "@/components/ui/Kbd";
+import { useUi } from "@/lib/store/ui";
 
 const NB_MONTHS = ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"];
 const NB_MONTHS_FULL = ["Januar", "Februar", "Mars", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Desember"];
@@ -45,6 +47,11 @@ export function FilterBar() {
     setPeriod, setArea, setCampaign, setChief, setTeam, setCustomRange, hydrate,
   } = useFilter();
   const [open, setOpen] = useState<string | null>(null);
+  // On a phone the five filters were 350px of chrome above the first number,
+  // so they fold behind one summary button and the data starts at the top.
+  const [showFilters, setShowFilters] = useState(false);
+  const showDetail = useUi((s) => s.showDetail);
+  const toggleDetail = useUi((s) => s.toggleDetail);
 
   useEffect(() => {
     const p = params.get("periode") as PeriodValue | null;
@@ -104,7 +111,8 @@ export function FilterBar() {
     },
   ];
 
-  const hasFilters = filters.some((f) => f.isSet);
+  const activeCount = filters.filter((f) => f.isSet).length;
+  const hasFilters = activeCount > 0;
   const reset = () => {
     setPeriod("30d"); setArea("all"); setCampaign("all"); setChief("all"); setTeam("all");
     setOpen(null); router.replace(pathname, { scroll: false });
@@ -116,23 +124,33 @@ export function FilterBar() {
   };
 
   return (
-    <div className="dc" data-theme="dark" data-palette="violet"
-         style={{ position: "relative", zIndex: 19, display: "flex", alignItems: "center", gap: 14, padding: "11px 20px", background: "var(--panel)", borderBottom: "1px solid var(--line)", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+    <div className="dc filter-bar" data-theme="dark"
+         style={{ position: "relative", zIndex: 19, display: "flex", alignItems: "center", gap: 14, padding: "12px 20px", background: "var(--panel)", borderBottom: "1px solid var(--line)", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
       {open && <div onClick={() => setOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 25 }} />}
 
-      <div style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--line2)", borderRadius: 11, background: "var(--sunk)", overflow: "visible" }}>
+      <button className="filter-toggle dc-hover" onClick={() => setShowFilters((v) => !v)}
+              aria-expanded={showFilters} aria-label="Vis eller skjul filtre"
+              style={{ display: "none", alignItems: "center", gap: 8, height: 38, padding: "0 13px", borderRadius: 10, border: "1px solid var(--line2)", background: "var(--sunk)", color: "var(--tx)", font: "500 12.5px 'IBM Plex Sans', sans-serif", cursor: "pointer" }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 5h18M6 12h12M10 19h4" /></svg>
+        {filters[0].display ?? filters[0].value}
+        {activeCount > 0 && <span style={{ display: "grid", placeItems: "center", minWidth: 16, height: 16, padding: "0 4px", borderRadius: 999, background: "var(--accent)", color: "#fff", font: "600 10.5px/1 'IBM Plex Mono', monospace" }}>{activeCount}</span>}
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="3" style={{ transform: showFilters ? "rotate(180deg)" : "none" }}><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+
+      <div className="filter-group" data-mobile-open={showFilters ? "1" : "0"} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--line2)", borderRadius: 11, background: "var(--sunk)", overflow: "visible" }}>
         {filters.map((f, i) => (
           <div key={f.key} style={{ position: "relative", borderRight: i < filters.length - 1 ? "1px solid var(--line)" : "0" }}>
             <button onClick={() => setOpen(open === f.key ? null : f.key)} className="dc-hover"
-                    style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3, height: 46, padding: "0 14px", justifyContent: "center", border: 0, background: open === f.key ? "var(--panel2)" : "transparent", cursor: "pointer", textAlign: "left", minWidth: f.minw, borderRadius: i === 0 ? "10px 0 0 10px" : i === filters.length - 1 ? "0 10px 10px 0" : 0 }}>
-              <span style={{ font: "500 8.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--tx3)" }}>{f.label}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 7, font: "500 12.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx)", whiteSpace: "nowrap" }}>
+                    style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3, height: 46, padding: "0 14px", justifyContent: "center", border: 0, background: open === f.key ? "var(--panel2)" : f.isSet ? "var(--accentsoft)" : "transparent", cursor: "pointer", textAlign: "left", minWidth: f.minw, borderRadius: i === 0 ? "10px 0 0 10px" : i === filters.length - 1 ? "0 10px 10px 0" : 0 }}
+                    aria-expanded={open === f.key} aria-label={`${f.label}: ${f.display ?? f.value}`}>
+              <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--tx3)" }}>{f.label}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 7, font: "500 12.5px/1 'IBM Plex Sans', sans-serif", color: f.isSet ? "var(--accent-text)" : "var(--tx)", whiteSpace: "nowrap" }}>
                 <span style={{ width: 5, height: 5, borderRadius: "50%", background: f.dot }} />{f.display ?? f.value}
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="3" style={{ transition: "transform .2s ease", transform: open === f.key ? "rotate(180deg)" : "rotate(0deg)" }}><path d="M6 9l6 6 6-6" /></svg>
               </span>
             </button>
             {open === f.key && (
-              <div style={{ position: "absolute", top: 52, left: 0, zIndex: 30, minWidth: f.key === "period" ? 232 : 200, maxHeight: 400, overflowY: "auto", padding: 5, borderRadius: 12, background: "var(--panel)", border: "1px solid var(--line2)", boxShadow: "0 18px 40px rgba(0,0,0,.45)", animation: "dc-expandIn .2s ease-out both" }}>
+              <div className="filter-pop" style={{ position: "absolute", top: 52, left: 0, zIndex: 30, minWidth: f.key === "period" ? 232 : 200, maxHeight: 400, overflowY: "auto", padding: 5, borderRadius: 12, background: "var(--panel)", border: "1px solid var(--line2)", boxShadow: "0 18px 40px rgba(0,0,0,.45)", animation: "dc-expandIn .2s ease-out both" }}>
                 {f.options.map((o) => {
                   const active = o.value === f.value;
                   return (
@@ -154,11 +172,28 @@ export function FilterBar() {
       </div>
 
       {hasFilters && (
-        <button onClick={reset} className="dc-hoverline"
-                style={{ height: 30, padding: "0 12px", borderRadius: 9, border: "1px solid var(--line)", background: "transparent", color: "var(--tx2)", font: "500 11.5px 'IBM Plex Sans', sans-serif", cursor: "pointer", transition: "color .14s ease, border-color .14s ease" }}>Nullstill</button>
+        <button onClick={reset} className="dc-hoverline" data-shortcut="r"
+                aria-label={`Nullstill ${activeCount} ${activeCount === 1 ? "filter" : "filtre"}`}
+                style={{ display: "flex", alignItems: "center", gap: 7, height: 30, padding: "0 12px", borderRadius: 9, border: "1px solid var(--line)", background: "transparent", color: "var(--tx2)", font: "500 11.5px 'IBM Plex Sans', sans-serif", cursor: "pointer", transition: "color .14s ease, border-color .14s ease" }}>
+          <span style={{ display: "grid", placeItems: "center", minWidth: 16, height: 16, padding: "0 4px", borderRadius: 999, background: "var(--accent)", color: "#fff", font: "600 10.5px/1 'IBM Plex Mono', monospace" }}>{activeCount}</span>
+          Nullstill <Kbd>R</Kbd>
+        </button>
       )}
-      <div style={{ flex: 1 }} />
-      <span style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{n(TOTAL_DOORS)} dører i utvalget</span>
+      <div className="bar-spacer" style={{ flex: 1 }} />
+
+      {/* Phone only. A dashboard on a phone that shows every supporting
+          figure at once reads as noise, so they start hidden and this brings
+          them back. Nothing is dropped, it is one tap away. */}
+      <button className="detail-toggle dc-hover" onClick={toggleDetail}
+              aria-pressed={showDetail} aria-label="Vis eller skjul detaljtall"
+              style={{ display: "none", alignItems: "center", gap: 7, height: 34, padding: "0 11px", borderRadius: 9, border: "1px solid var(--line2)", background: showDetail ? "var(--accentsoft)" : "transparent", color: showDetail ? "var(--accent-text)" : "var(--tx2)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer" }}>
+        <span style={{ width: 24, height: 14, borderRadius: 999, background: showDetail ? "var(--accent)" : "var(--sunk)", border: "1px solid var(--line2)", position: "relative", flex: "none" }}>
+          <span style={{ position: "absolute", top: 1, left: showDetail ? 11 : 1, width: 10, height: 10, borderRadius: "50%", background: showDetail ? "#fff" : "var(--tx3)", transition: "left .12s ease" }} />
+        </span>
+        Detaljer
+      </button>
+
+      <span className="doors-total" style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{n(TOTAL_DOORS)} dører i utvalget</span>
     </div>
   );
 }
@@ -197,11 +232,11 @@ export function Calendar({ customFrom, onApply }: { customFrom: string | null; o
     <div style={{ marginTop: 5, padding: "11px 8px 8px", borderTop: "1px solid var(--line)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 3px 9px" }}>
         <span style={{ font: "600 11.5px/1 'IBM Plex Sans', sans-serif" }}>{NB_MONTHS_FULL[month]} {year}</span>
-        <span style={{ font: "400 10px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>velg startdato</span>
+        <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>velg startdato</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,26px)", gap: 2, padding: "0 3px" }}>
         {["M", "T", "O", "T", "F", "L", "S"].map((h, i) => (
-          <span key={i} style={{ height: 18, display: "grid", placeItems: "center", font: "500 9px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".06em", color: "var(--tx3)" }}>{h}</span>
+          <span key={i} style={{ height: 18, display: "grid", placeItems: "center", font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".06em", color: "var(--tx3)" }}>{h}</span>
         ))}
         {cells.map((d, i) => (
           <button key={i} disabled={d == null || d > todayDate} onClick={() => d != null && setStart(d)} style={cellStyle(d)}>{d ?? ""}</button>

@@ -40,8 +40,8 @@ export function StatusBar({ counts }: { counts?: string }) {
   }, [bump]);
 
   return (
-    <footer className="flex h-[30px] flex-none items-center gap-[18px] border-t border-line bg-s1 px-4 font-mono text-[10.5px] tracking-[0.03em] text-fg3">
-      <span className="text-fg2">{filterQuery(filter)}</span>
+    <footer className="flex h-[30px] flex-none items-center gap-[18px] overflow-hidden whitespace-nowrap border-t border-line bg-s1 px-4 font-mono text-[10.5px] tracking-[0.03em] text-fg3">
+      <span className="hidden text-fg2 sm:inline">{filterQuery(filter)}</span>
       <span className="truncate" suppressHydrationWarning>{counts ?? scope ?? "…"}</span>
       <div className="ml-auto flex items-center gap-3.5">
         <span className="rounded-[5px] border border-warn px-[7px] text-[9.5px] font-semibold tracking-[0.12em] text-warn">

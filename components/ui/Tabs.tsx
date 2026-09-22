@@ -12,7 +12,7 @@ export function Tabs<T extends string>({
   items: Array<{ id: T; label: string; count?: number; tone?: "crit" | "warn" }>;
 }) {
   return (
-    <div className="flex flex-none items-stretch gap-0 border-b border-line px-4">
+    <div className="tab-strip flex flex-none items-stretch gap-0 border-b border-line px-4">
       {items.map((it) => {
         const on = value === it.id;
         return (
@@ -21,7 +21,7 @@ export function Tabs<T extends string>({
             type="button"
             onClick={() => onChange(it.id)}
             className={cn(
-              "relative flex cursor-pointer items-center gap-2 px-4 py-3 text-[13px] transition-colors",
+              "relative flex flex-none cursor-pointer items-center gap-2 whitespace-nowrap px-4 py-3 text-[13px] transition-colors",
               on ? "font-semibold text-fg1" : "text-fg3 hover:text-fg2",
             )}
           >

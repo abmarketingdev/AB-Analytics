@@ -65,25 +65,25 @@ export function PersonFilterBar({ personId }: { personId: string }) {
   const applyRange = (fromISO: string, toISO: string) => { setCustomRange(fromISO, toISO); setOpen(null); push({ periode: "custom", fra: fromISO, til: toISO }); };
 
   return (
-    <div className="dc" data-theme="dark" data-palette="violet"
-         style={{ position: "relative", zIndex: 19, display: "flex", alignItems: "center", gap: 14, padding: "11px 20px", background: "var(--panel)", borderBottom: "1px solid var(--line)", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+    <div className="dc filter-bar" data-theme="dark" data-palette="violet"
+         style={{ position: "relative", zIndex: 19, display: "flex", alignItems: "center", gap: 14, padding: "12px 20px", background: "var(--panel)", borderBottom: "1px solid var(--line)", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
       {open && <div onClick={() => setOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 25 }} />}
 
-      <span style={{ font: "500 8.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--tx3)", marginRight: 2 }}>Personvisning</span>
+      <span className="hide-sm" style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--tx3)", marginRight: 2 }}>Personvisning</span>
 
-      <div style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--line2)", borderRadius: 11, background: "var(--sunk)" }}>
+      <div className="pfilter-group" style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--line2)", borderRadius: 11, background: "var(--sunk)" }}>
         {filters.map((f, i) => (
           <div key={f.key} style={{ position: "relative", borderRight: i < filters.length - 1 ? "1px solid var(--line)" : "0" }}>
             <button onClick={() => setOpen(open === f.key ? null : f.key)} className="dc-hover"
                     style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3, height: 46, padding: "0 14px", justifyContent: "center", border: 0, background: open === f.key ? "var(--panel2)" : "transparent", cursor: "pointer", textAlign: "left", minWidth: f.minw, borderRadius: i === 0 ? "10px 0 0 10px" : i === filters.length - 1 ? "0 10px 10px 0" : 0 }}>
-              <span style={{ font: "500 8.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--tx3)" }}>{f.label}</span>
+              <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--tx3)" }}>{f.label}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 7, font: "500 12.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx)", whiteSpace: "nowrap" }}>
                 <span style={{ width: 5, height: 5, borderRadius: "50%", background: f.dot }} />{f.display}
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="3" style={{ transition: "transform .2s ease", transform: open === f.key ? "rotate(180deg)" : "rotate(0deg)" }}><path d="M6 9l6 6 6-6" /></svg>
               </span>
             </button>
             {open === f.key && (
-              <div style={{ position: "absolute", top: 52, left: 0, zIndex: 30, minWidth: f.key === "period" ? 232 : 210, maxHeight: 400, overflowY: "auto", padding: 5, borderRadius: 12, background: "var(--panel)", border: "1px solid var(--line2)", boxShadow: "0 18px 40px rgba(0,0,0,.45)", animation: "dc-expandIn .2s ease-out both" }}>
+              <div className="filter-pop" style={{ position: "absolute", top: 52, left: 0, zIndex: 30, minWidth: f.key === "period" ? 232 : 210, maxHeight: 400, overflowY: "auto", padding: 5, borderRadius: 12, background: "var(--panel)", border: "1px solid var(--line2)", boxShadow: "0 18px 40px rgba(0,0,0,.45)", animation: "dc-expandIn .2s ease-out both" }}>
                 {f.options.map((o) => {
                   const active = o.value === f.value;
                   return (

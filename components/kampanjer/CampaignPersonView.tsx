@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Ban, ExternalLink, Radio, Layers, Clock, Target,
@@ -37,7 +38,7 @@ export function CampaignPersonView({ campaignId, personId }: { campaignId: strin
     );
   }
   if (q.isError || !q.data) {
-    return <p className="p-6 text-[13px] text-nei">Kunne ikke hente kampanjeprofilen.</p>;
+    return <ErrorState what="kampanjeprofilen" onRetry={() => q.refetch()} />;
   }
 
   const { person, campaign, stats, offCampaign, series, areas } = q.data;
@@ -58,7 +59,7 @@ export function CampaignPersonView({ campaignId, personId }: { campaignId: strin
         <div className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-4">
           <Link href="/kampanjer"
                 className="flex flex-none items-center gap-1.5 text-[12px] text-fg3 transition-colors hover:text-iris-soft">
-            <ArrowLeft size={13} /> Kampanjer
+            <ArrowLeft size={16} /> Kampanjer
           </Link>
           <div className="h-8 w-px bg-line" />
           <Avatar initials={person.initials} size={44} tone="bg-iris/25 text-iris-soft" />
@@ -76,12 +77,12 @@ export function CampaignPersonView({ campaignId, personId }: { campaignId: strin
             </span>
             <span className={cn("flex items-center gap-1 rounded-md px-2 py-[3px] text-[10.5px] font-semibold",
                                 person.online ? "bg-ja/18 text-ja" : "bg-s3 text-fg3")}>
-              <Radio size={9} /> {person.online ? "pålogget" : "frakoblet"}
+              <Radio size={12} /> {person.online ? "pålogget" : "frakoblet"}
             </span>
           </div>
           <Link href={`/personer/${person.id}`}
                 className="ml-auto flex flex-none items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[11.5px] text-fg2 transition-colors hover:border-line2 hover:text-fg1">
-            Full profil, alle kampanjer <ExternalLink size={11} />
+            Full profil, alle kampanjer <ExternalLink size={12} />
           </Link>
         </div>
 
@@ -102,10 +103,10 @@ export function CampaignPersonView({ campaignId, personId }: { campaignId: strin
         <div className="flex flex-col gap-3.5 p-4">
           {/* KPI row */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-            <Kpi label="Dører" value={n(stats.doors)} sub={`${n1(stats.shareOfCampaign)} % av kampanjen`} />
-            <Kpi label="Ja" value={n(stats.ja)} sub={`${n1(stats.convRate)} % av pitchede`} tone="text-ja" />
-            <Kpi label="Ja-rate" value={`${n1(stats.jaRate)} %`}
-                 sub={`kontakt ${n1(stats.contactRate)} %`}
+            <Kpi label="Dører" value={n(stats.doors)} sub={`${n1(stats.shareOfCampaign)} % av kampanjen`} />
+            <Kpi label="Ja" value={n(stats.ja)} sub={`${n1(stats.convRate)} % av pitchede`} tone="text-ja" />
+            <Kpi label="Ja-rate" value={`${n1(stats.jaRate)} %`}
+                 sub={`kontakt ${n1(stats.contactRate)} %`}
                  tone={stats.jaRate >= 3 ? "text-ja" : stats.jaRate < 2 ? "text-crit" : undefined} />
             <Kpi label="Tid på kampanjen" value={hhmm(stats.campaignMinutes)}
                  sub={`${stats.activeDays} aktive dager`} icon={Clock} />
@@ -148,13 +149,13 @@ export function CampaignPersonView({ campaignId, personId }: { campaignId: strin
                     <span className="h-2 w-2 flex-none rounded-[2px]" style={{ background: o.c }} />
                     <span className="min-w-0 truncate text-fg2">{o.k}</span>
                     <span data-num className="ml-auto text-fg1">{n(o.v)}</span>
-                    <span data-num className="w-12 text-right text-fg3">{n1((o.v / (stats.doors || 1)) * 100)} %</span>
+                    <span data-num className="w-12 text-right text-fg3">{n1((o.v / (stats.doors || 1)) * 100)} %</span>
                   </div>
                 ))}
               </div>
               {stats.proximityViolations > 0 && (
                 <p className="mt-auto flex items-center gap-1.5 border-t border-line pt-2.5 font-mono text-[10.5px] text-crit">
-                  <Ban size={11} /> {stats.proximityViolations} nærhetsbrudd på denne kampanjen
+                  <Ban size={12} /> {stats.proximityViolations} nærhetsbrudd på denne kampanjen
                 </p>
               )}
             </Card>
@@ -172,7 +173,7 @@ export function CampaignPersonView({ campaignId, personId }: { campaignId: strin
                     </span>
                     <span data-num className="w-14 text-right font-mono text-fg1">{n(a.doors)}</span>
                     <span data-num className={cn("w-12 text-right font-mono", a.jaRate >= 3 ? "text-ja" : "text-fg3")}>
-                      {n1(a.jaRate)} %
+                      {n1(a.jaRate)} %
                     </span>
                   </div>
                 ))}
@@ -203,7 +204,7 @@ function Kpi({
   return (
     <div className="card-in rounded-lg border border-line bg-s1 px-3.5 py-3">
       <div className="flex items-center gap-1.5">
-        {Icon && <Icon size={10} className="flex-none text-fg3" />}
+        {Icon && <Icon size={12} className="flex-none text-fg3" />}
         <span className="t-label truncate">{label}</span>
       </div>
       <div data-num className={cn("mt-1 font-mono text-[21px] font-semibold leading-none tracking-tight", tone)}>

@@ -8,10 +8,13 @@ import type { DayRow } from "@/lib/mock/history";
 import { useFilter } from "@/lib/store/filter";
 import { n, n1, pct } from "@/lib/format";
 import { spark } from "@/components/kommando/util";
+import { clickable } from "@/lib/a11y";
+import { SkeletonCard, EmptyState } from "@/components/ui/Skeleton";
+import { Drill } from "@/components/ui/Drill";
 
-const CARD: React.CSSProperties = { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "var(--shadow)" };
+const CARD: React.CSSProperties = { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12 };
 const H2: React.CSSProperties = { margin: 0, font: "600 14.5px/1.2 'IBM Plex Sans', sans-serif" };
-const LBL: React.CSSProperties = { font: "500 9.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" };
+const LBL: React.CSSProperties = { font: "500 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--tx3)" };
 const hm = (h: number) => `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, "0")}`;
 const roleWord = (r: string) => (r === "leader" ? "teamleder" : r === "chief" ? "salgssjef" : "selger");
 
@@ -38,8 +41,33 @@ export default function PersonProfile() {
   // "Se rute" → the live map's route replay for this person
   const seeRoute = () => router.push(`/live?replay=${id}`);
 
-  if (q.isPending) return <div className="dc" style={{ padding: 40, background: "var(--bg)", minHeight: "100%", color: "var(--tx3)", font: "400 13px 'IBM Plex Sans',sans-serif" }}>Laster profil…</div>;
-  if (q.isError || !d) return <div className="dc" style={{ padding: 40, background: "var(--bg)", minHeight: "100%", color: "var(--neg)", font: "400 13px 'IBM Plex Sans',sans-serif" }}>Kunne ikke hente profilen.</div>;
+  // A skeleton in the shape of the real dossier, so the page does not jump
+  // from a line of text to a full grid when the data lands.
+  if (q.isPending) return (
+    <div className="dc dc-page" data-theme="dark" style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 14, alignContent: "start", background: "var(--bg)", minHeight: "100%" }}>
+      <SkeletonCard span={12} h={64} />
+      <SkeletonCard span={12} h={96} />
+      <SkeletonCard span={12} h={110} />
+      <SkeletonCard span={8} h={300} />
+      <SkeletonCard span={4} h={300} />
+      <SkeletonCard span={8} h={260} />
+      <SkeletonCard span={4} h={260} />
+    </div>
+  );
+  if (q.isError || !d) return (
+    <div className="dc" style={{ padding: 40, background: "var(--bg)", minHeight: "100%" }}>
+      <EmptyState
+        title="Kunne ikke hente profilen"
+        hint="Prøv igjen, eller gå tilbake til listen over personer."
+        action={
+          <button onClick={() => router.push("/personer")} className="dc-hoverline"
+                  style={{ marginTop: 4, height: 30, padding: "0 13px", borderRadius: 9, border: "1px solid var(--line2)", background: "transparent", color: "var(--tx2)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer" }}>
+            Tilbake til personer
+          </button>
+        }
+      />
+    </div>
+  );
 
   return <Profile d={d} back={back} seeRoute={seeRoute} campaignName={campaign === "all" ? "alle kampanjer" : d.campaignsWorked.find((c) => c.id === campaign)?.name ?? "kampanje"} />;
 }
@@ -56,25 +84,25 @@ function Profile({ d, back, seeRoute, campaignName }: { d: Dossier; back: () => 
   const kpis = [
     { label: "Dører", value: n(row.doors), color: "var(--tx)", sub: campaignName },
     { label: "Dører / dag", value: n1(row.doorsPerDay), color: row.doorsPerDay >= effective.minDoorsPerDay ? "var(--tx)" : "var(--neg)", sub: `krav ${n1(effective.minDoorsPerDay)}` },
-    { label: "Ja-rate", value: pct(row.jaRate), color: row.jaRate >= effective.minYesRatePercent ? "var(--pos)" : "var(--neg)", sub: `krav ${n1(effective.minYesRatePercent)} %` },
+    { label: "Ja-rate", value: pct(row.jaRate), color: row.jaRate >= effective.minYesRatePercent ? "var(--pos)" : "var(--neg)", sub: `krav ${n1(effective.minYesRatePercent)} %` },
     { label: "Samtalekonv.", value: pct(row.convRate), color: "var(--tx)", sub: "ja ÷ pitchet" },
     { label: "Tempo", value: n1(row.pace), color: "var(--tx)", sub: "dører per aktiv time" },
     { label: "Fulle dager", value: pct(row.fullDayPct), color: row.fullDayPct >= 60 ? "var(--pos)" : "var(--warn)", sub: `grense ${effective.fullDayDoors}` },
   ];
 
   return (
-    <div className="dc" data-theme="dark" data-palette="violet" style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 14, alignContent: "start", alignItems: "start", background: "var(--bg)", minHeight: "100%", fontFamily: "'IBM Plex Sans', system-ui, sans-serif", animation: "dc-viewin .34s cubic-bezier(.2,.8,.2,1) both" }}>
+    <div className="dc dc-page" data-theme="dark" style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 14, alignContent: "start", alignItems: "start", background: "var(--bg)", minHeight: "100%", fontFamily: "'IBM Plex Sans', system-ui, sans-serif", animation: "dc-viewin 0.2s cubic-bezier(.2,.8,.2,1) both" }}>
 
       {/* header */}
       <div style={{ gridColumn: "span 12", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <button onClick={back} className="dc-hoverline" style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", borderRadius: 9, border: "1px solid var(--line)", background: "transparent", color: "var(--tx2)", font: "500 12px 'IBM Plex Sans', sans-serif", cursor: "pointer", transition: "color .14s ease, border-color .14s ease" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 6l-6 6 6 6" /></svg>Personer
         </button>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(140deg,var(--accent),var(--accent2))", display: "grid", placeItems: "center", font: "600 16px 'IBM Plex Sans', sans-serif", color: "#fff", animation: "dc-popIn .4s cubic-bezier(.2,.8,.2,1) both" }}>{row.initials}</div>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: "var(--accent)", display: "grid", placeItems: "center", font: "600 16px 'IBM Plex Sans', sans-serif", color: "#fff", animation: "dc-popIn 0.2s cubic-bezier(.2,.8,.2,1) both" }}>{row.initials}</div>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <h1 style={{ margin: 0, font: "600 24px/1.1 'IBM Plex Sans', sans-serif", letterSpacing: "-.02em" }}>{row.name}</h1>
-            <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "5px 9px", borderRadius: 7, background: status.bg, color: status.color }}>{status.word}</span>
+            <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "4px 8px", borderRadius: 7, background: status.bg, color: status.color }}>{status.word}</span>
           </div>
           <div style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", marginTop: 7 }}>{row.abId} · {roleWord(row.role)} · {row.teamName} · {row.chiefName}</div>
         </div>
@@ -92,23 +120,29 @@ function Profile({ d, back, seeRoute, campaignName }: { d: Dossier; back: () => 
           </div>
           <span style={{ font: "400 11px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>4 krav · terskel fra {effective.label}</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginTop: 14 }}>
+        <div className="krav-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginTop: 14 }}>
           {checks.map((c, i) => {
             const val = c.unit === " %" ? pct(c.actual) : n1(c.actual);
-            const req = c.unit === " %" ? `krav ${n1(c.limit)} %` : `krav ${n1(c.limit)}`;
+            const req = c.unit === " %" ? `krav ${n1(c.limit)} %` : `krav ${n1(c.limit)}`;
             const pctW = Math.min(100, c.limit > 0 ? (c.actual / c.limit) * 100 : 0);
             return (
-              <div key={c.key} style={{ padding: "12px 14px", borderRadius: 12, background: "var(--sunk)", border: `1px solid ${c.pass ? "var(--line)" : "rgba(255,107,107,.32)"}`, animation: "dc-tileIn .4s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 60}ms` }}>
+              <div key={c.key} style={{ padding: "12px 16px", borderRadius: 12, background: "var(--sunk)", border: `1px solid ${c.pass ? "var(--line)" : "rgba(255,107,107,.32)"}`, animation: "dc-tileIn 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 60}ms` }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>{c.label}</span>
-                  <span style={{ width: 16, height: 16, borderRadius: "50%", display: "grid", placeItems: "center", background: c.pass ? "rgba(61,220,151,.16)" : "rgba(255,107,107,.16)", color: c.pass ? "var(--pos)" : "var(--neg)", font: "700 10px 'IBM Plex Sans', sans-serif" }}>{c.pass ? "✓" : "✕"}</span>
+                  {/* drawn, not a 10px glyph: it scales with the badge and stays centred */}
+                  <span style={{ width: 18, height: 18, borderRadius: "50%", display: "grid", placeItems: "center", flex: "none", background: c.pass ? "rgba(61,220,151,.16)" : "rgba(255,107,107,.16)", color: c.pass ? "var(--pos)" : "var(--neg)" }}
+                        role="img" aria-label={c.pass ? "oppfylt" : "brutt"}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      {c.pass ? <path d="M5 12.5l4.5 4.5L19 7" /> : <><path d="M6 6l12 12" /><path d="M18 6L6 18" /></>}
+                    </svg>
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 9 }}>
                   <span style={{ font: "600 19px/1 'IBM Plex Mono', monospace", color: c.pass ? "var(--pos)" : "var(--neg)" }}>{val}</span>
                   <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{req}</span>
                 </div>
                 <div style={{ position: "relative", height: 5, borderRadius: 3, background: "var(--panel2)", marginTop: 10, overflow: "hidden" }}>
-                  <div style={{ height: "100%", borderRadius: 3, width: `${pctW}%`, background: c.pass ? "var(--pos)" : "var(--neg)", transformOrigin: "left", animation: "dc-barGrow .55s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 60}ms` }} />
+                  <div style={{ height: "100%", borderRadius: 3, width: `${pctW}%`, background: c.pass ? "var(--pos)" : "var(--neg)", transformOrigin: "left", animation: "dc-barGrow 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 60}ms` }} />
                 </div>
               </div>
             );
@@ -117,26 +151,35 @@ function Profile({ d, back, seeRoute, campaignName }: { d: Dossier; back: () => 
       </section>
 
       {/* 6-stat band */}
-      <section style={{ ...CARD, gridColumn: "span 12", display: "grid", gridTemplateColumns: "repeat(6,1fr)", overflow: "hidden" }}>
+      <section className="metric-strip" style={{ ...CARD, gridColumn: "span 12", display: "grid", gridTemplateColumns: "repeat(6,1fr)", overflow: "hidden" }}>
         {kpis.map((k, i) => (
-          <div key={k.label} style={{ padding: "15px 16px", borderRight: i < 5 ? "1px solid var(--line)" : "0", animation: "dc-tileIn .4s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 45}ms` }}>
+          <div key={k.label} style={{ padding: "16px 16px", borderRight: i < 5 ? "1px solid var(--line)" : "0", animation: "dc-tileIn 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 45}ms` }}>
             <div style={LBL}>{k.label}</div>
             <div style={{ font: "600 22px/1 'IBM Plex Mono', monospace", marginTop: 10, color: k.color }}>{k.value}</div>
-            <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: "100%", height: 20, display: "block", marginTop: 9, color: k.color }}>
+            <svg className="detail-only" viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: "100%", height: 20, display: "block", marginTop: 9, color: k.color }}>
               <path d={sp12.line} fill="none" stroke="currentColor" strokeWidth="1.5" opacity=".8" vectorEffect="non-scaling-stroke" />
             </svg>
-            <div style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", marginTop: 7 }}>{k.sub}</div>
+            <div className="detail-only" style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)", marginTop: 7 }}>{k.sub}</div>
           </div>
         ))}
       </section>
 
-      {/* Dører per dag + Terskelkjede */}
-      <DoorsChart history={history} normal={dev.baseline} floor={effective.minDoorsPerDay} />
-      <ThresholdChain chain={thresholdChain} effectiveId={effective.id} />
+      {/* Dører per dag + Terskelkjede. On a phone each of these folds away;
+          on a desktop <Drill> renders its children untouched. */}
+      <Drill title="Dører per dag" hint="mot egen normal">
+        <DoorsChart history={history} normal={dev.baseline} floor={effective.minDoorsPerDay} />
+      </Drill>
+      <Drill title="Terskelkjede" hint="hvilken regel gjelder">
+        <ThresholdChain chain={thresholdChain} effectiveId={effective.id} />
+      </Drill>
 
       {/* Arbeidsvindu + Avslag/Integritet */}
-      <WorkWindow history={history} medianStart={teamMedianStart} />
-      <RejectionIntegrity neiSplit={neiSplit} integrity={integrity} />
+      <Drill title="Arbeidsvindu" hint="start og slutt">
+        <WorkWindow history={history} medianStart={teamMedianStart} />
+      </Drill>
+      <Drill title="Avslag og integritet" hint="nei-typer, GPS">
+        <RejectionIntegrity neiSplit={neiSplit} integrity={integrity} />
+      </Drill>
     </div>
   );
 }
@@ -172,35 +215,40 @@ function DoorsChart({ history, normal, floor }: { history: DayRow[]; normal: num
 
       <div style={{ flex: 1, minHeight: 190, display: "flex", alignItems: "flex-end", gap: 3, marginTop: 18, paddingLeft: 34, position: "relative" }}
            onMouseLeave={() => setHover(null)}>
-        <div style={{ position: "absolute", left: 0, top: -8, bottom: 0, width: 30, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", font: "400 10px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
+        <div style={{ position: "absolute", left: 0, top: -8, bottom: 0, width: 30, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
           {[max, (max * 2) / 3, max / 3, 0].map((v, i) => <span key={i}>{Math.round(v)}</span>)}
         </div>
         <div style={{ position: "absolute", left: 34, right: 0, height: 1, background: "var(--tx3)", opacity: 0.7, bottom: `${(normal / max) * 100}%`, zIndex: 2 }} />
         <div style={{ position: "absolute", left: 34, right: 0, height: 1, background: "var(--neg)", opacity: 0.5, bottom: `${(floor / max) * 100}%`, zIndex: 2 }} />
         {days.map((b, i) => (
-          <div key={i} onMouseEnter={() => setHover(i)} onClick={() => setSel(sel === i ? null : i)}
+          <div key={i} onMouseEnter={() => setHover(i)} {...clickable(() => setSel(sel === i ? null : i), `${b.doors} dører`)}
                style={{ flex: 1, position: "relative", height: "100%", display: "flex", alignItems: "flex-end", cursor: "pointer", opacity: sel != null && sel !== i ? 0.4 : 1, transition: "opacity .3s ease" }}>
-            <div style={{ width: "100%", borderRadius: "3px 3px 0 0", height: `${(b.doors / max) * 100}%`, background: color(b.doors), boxShadow: sel === i || hover === i ? "0 0 0 2px var(--accent2)" : "none", transformOrigin: "bottom", animation: "dc-barRise .5s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${Math.min(i, 20) * 12}ms` }} />
+            <div style={{ width: "100%", borderRadius: "3px 3px 0 0", height: `${(b.doors / max) * 100}%`, background: color(b.doors), boxShadow: sel === i || hover === i ? "0 0 0 2px var(--accent2)" : "none", transformOrigin: "bottom", animation: "dc-barRise 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${Math.min(i, 20) * 12}ms` }} />
           </div>
         ))}
         {hover != null && days[hover] && (
           <div style={{ position: "absolute", zIndex: 6, pointerEvents: "none", transform: "translate(-50%,-100%)", left: `calc(34px + ${((hover + 0.5) / days.length) * 100}% - 17px)`, bottom: `${(days[hover].doors / max) * 100}%`, animation: "dc-popIn .16s ease-out both" }}>
-            <div style={{ marginBottom: 9, padding: "9px 12px", borderRadius: 11, background: "var(--panel)", border: "1px solid var(--line2)", boxShadow: "0 14px 32px rgba(0,0,0,.5)", whiteSpace: "nowrap" }}>
+            <div style={{ marginBottom: 9, padding: "8px 12px", borderRadius: 11, background: "var(--panel)", border: "1px solid var(--line2)", boxShadow: "0 14px 32px rgba(0,0,0,.5)", whiteSpace: "nowrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 7, height: 7, borderRadius: 2, background: color(days[hover].doors) }} />
                 <span style={{ font: "600 12px/1 'IBM Plex Sans', sans-serif" }}>{dayLabel(days[hover].day)}</span>
               </div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 8 }}>
                 <span style={{ font: "600 18px/1 'IBM Plex Mono', monospace" }}>{n(days[hover].doors)}</span>
-                <span style={{ font: "400 10px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>dører</span>
-                <span style={{ font: "600 10px/1 'IBM Plex Mono', monospace", color: color(days[hover].doors), marginLeft: 2 }}>{days[hover].doors - normal >= 0 ? "+" : "−"}{Math.abs(Math.round(days[hover].doors - normal))}</span>
+                <span style={{ font: "400 10.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>dører</span>
+                <span style={{ font: "600 10.5px/1 'IBM Plex Mono', monospace", color: color(days[hover].doors), marginLeft: 2 }}>{days[hover].doors - normal >= 0 ? "+" : "−"}{Math.abs(Math.round(days[hover].doors - normal))}</span>
               </div>
             </div>
           </div>
         )}
       </div>
-      <div style={{ display: "flex", gap: 3, marginTop: 8, paddingLeft: 34, font: "400 10px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
-        {days.map((b, i) => <span key={i} style={{ flex: 1, minWidth: 0, textAlign: "center", whiteSpace: "nowrap" }}>{i % showTickEvery === 0 ? dayLabel(b.day) : ""}</span>)}
+      <div style={{ display: "flex", gap: 3, marginTop: 8, paddingLeft: 34, font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
+        {(() => { let k = -1; return days.map((b, i) => {
+          const show = i % showTickEvery === 0;
+          if (show) k += 1;
+          return <span key={i} data-lab={show ? (k % 2 === 1 ? "alt" : "main") : undefined}
+                       style={{ flex: 1, minWidth: 0, textAlign: "center", whiteSpace: "nowrap" }}>{show ? dayLabel(b.day) : ""}</span>;
+        }); })()}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", marginTop: 12, paddingTop: 11, borderTop: "1px solid var(--line)", font: "400 11px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
@@ -216,8 +264,8 @@ function DoorsChart({ history, normal, floor }: { history: DayRow[]; normal: num
       </div>
 
       {sd && (
-        <div style={{ overflow: "hidden", animation: "dc-expandIn .4s cubic-bezier(.2,.8,.2,1) both" }}>
-          <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, background: "var(--sunk)", border: "1px solid var(--line)", display: "grid", gridTemplateColumns: "150px 1fr 150px", gap: 20, alignItems: "center" }}>
+        <div style={{ overflow: "hidden", animation: "dc-expandIn 0.2s cubic-bezier(.2,.8,.2,1) both" }}>
+          <div style={{ marginTop: 14, padding: "16px 16px", borderRadius: 12, background: "var(--sunk)", border: "1px solid var(--line)", display: "grid", gridTemplateColumns: "150px 1fr 150px", gap: 20, alignItems: "center" }}>
             <div>
               <div style={LBL}>{dayLabel(sd.day)}</div>
               <div style={{ font: "600 28px/1 'IBM Plex Mono', monospace", marginTop: 9 }}>{n(sd.doors)}</div>
@@ -228,10 +276,10 @@ function DoorsChart({ history, normal, floor }: { history: DayRow[]; normal: num
                 <div key={l as string} style={{ display: "grid", gridTemplateColumns: "96px 1fr 54px 48px", gap: 12, alignItems: "center" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8, font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}><span style={{ width: 8, height: 8, borderRadius: 3, background: c as string }} />{l as string}</span>
                   <div style={{ height: 8, borderRadius: 4, background: "var(--panel2)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 4, width: `${Math.round(((v as number) / (sd.doors || 1)) * 100)}%`, background: c as string, transformOrigin: "left", animation: "dc-barGrow .5s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${k * 55}ms` }} />
+                    <div style={{ height: "100%", borderRadius: 4, width: `${Math.round(((v as number) / (sd.doors || 1)) * 100)}%`, background: c as string, transformOrigin: "left", animation: "dc-barGrow 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${k * 55}ms` }} />
                   </div>
                   <span style={{ textAlign: "right", font: "500 11.5px/1 'IBM Plex Mono', monospace" }}>{n(v as number)}</span>
-                  <span style={{ textAlign: "right", font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{(((v as number) / (sd.doors || 1)) * 100).toFixed(0)} %</span>
+                  <span style={{ textAlign: "right", font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{(((v as number) / (sd.doors || 1)) * 100).toFixed(0)} %</span>
                 </div>
               ))}
             </div>
@@ -269,7 +317,7 @@ function ThresholdChain({ chain, effectiveId }: { chain: Dossier["thresholdChain
               </div>
               <span style={{ font: "600 12.5px/1 'IBM Plex Mono', monospace", color: nameColor }}>{c.exists ? c.minDoorsPerDay : "—"}</span>
               {active
-                ? <span style={{ font: "600 9px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".08em", textTransform: "uppercase", padding: "4px 6px", borderRadius: 5, background: "var(--accentsoft)", color: "var(--accent)" }}>gjelder</span>
+                ? <span style={{ font: "600 10.5px/1 'IBM Plex Sans', sans-serif", letterSpacing: ".08em", textTransform: "uppercase", padding: "4px 8px", borderRadius: 5, background: "var(--accentsoft)", color: "var(--accent)" }}>gjelder</span>
                 : <span style={{ width: 1 }} />}
             </div>
           );
@@ -299,7 +347,7 @@ function WorkWindow({ history, medianStart }: { history: DayRow[]; medianStart: 
         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}><span style={{ width: 14, height: 1, background: "var(--accent2)", opacity: 0.7 }} />teamets medianstart {hm(medianStart)}</span>
       </div>
       <div style={{ flex: 1, minHeight: 200, display: "flex", gap: 14, marginTop: 16 }}>
-        <div style={{ position: "relative", width: 34, font: "400 10px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
+        <div style={{ position: "relative", width: 34, font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
           {ticks.map((t) => <span key={t} style={{ position: "absolute", right: 0, transform: "translateY(-50%)", top: `${topPct(t)}%` }}>{t}:00</span>)}
         </div>
         <div style={{ position: "relative", flex: 1, borderLeft: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
@@ -307,13 +355,13 @@ function WorkWindow({ history, medianStart }: { history: DayRow[]; medianStart: 
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "stretch", gap: 6, padding: "0 6px" }}>
             {days.map((w, i) => (
               <div key={i} style={{ flex: 1, position: "relative" }}>
-                <div title={`${hm(w.firstKnock)}–${hm(w.lastKnock)}`} style={{ position: "absolute", left: 0, right: 0, borderRadius: 5, top: `${topPct(w.lastKnock)}%`, height: `${((w.lastKnock - w.firstKnock) / span) * 100}%`, background: color(w), transformOrigin: "top", animation: "dc-barRise .5s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 30}ms` }} />
+                <div title={`${hm(w.firstKnock)}–${hm(w.lastKnock)}`} style={{ position: "absolute", left: 0, right: 0, borderRadius: 5, top: `${topPct(w.lastKnock)}%`, height: `${((w.lastKnock - w.firstKnock) / span) * 100}%`, background: color(w), transformOrigin: "top", animation: "dc-barRise 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${i * 30}ms` }} />
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 9, paddingLeft: 48, font: "400 9.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
+      <div style={{ display: "flex", gap: 6, marginTop: 9, paddingLeft: 48, font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>
         {days.map((w, i) => { const dt = new Date(w.day); return <span key={i} style={{ flex: 1, minWidth: 0, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden" }}>{dt.getDate()}.</span>; })}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 13, paddingTop: 12, borderTop: "1px solid var(--line)", font: "400 11px/1 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
@@ -332,8 +380,8 @@ function RejectionIntegrity({ neiSplit, integrity }: { neiSplit: Dossier["neiSpl
   const total = neiSplit.hard + neiSplit.structural || 1;
   const rows = [
     { label: "Nærhetsbrudd", value: n(integrity.proximityViolations), color: integrity.proximityViolations > 5 ? "var(--neg)" : "var(--tx2)" },
-    { label: "Uverifiserte registreringer", value: `${n1(integrity.unverifiedPct)} %`, color: integrity.unverifiedPct > 10 ? "var(--warn)" : "var(--tx2)" },
-    { label: "GPS-dekning", value: `${n1(integrity.gpsCoverage)} %`, color: integrity.gpsCoverage < 85 ? "var(--warn)" : "var(--pos)" },
+    { label: "Uverifiserte registreringer", value: `${n1(integrity.unverifiedPct)} %`, color: integrity.unverifiedPct > 10 ? "var(--warn)" : "var(--tx2)" },
+    { label: "GPS-dekning", value: `${n1(integrity.gpsCoverage)} %`, color: integrity.gpsCoverage < 85 ? "var(--warn)" : "var(--pos)" },
     { label: "Burst-dager", value: n(integrity.burstDays), color: integrity.burstDays > 0 ? "var(--warn)" : "var(--tx2)" },
     { label: "Median avstand til dør", value: `${n(integrity.medianDistance)} m`, color: "var(--tx2)" },
   ];
