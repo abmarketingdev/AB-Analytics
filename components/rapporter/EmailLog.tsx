@@ -38,7 +38,7 @@ export function EmailLog() {
   const failed = rows.filter((r) => r.status === "failed").length;
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div className="mail-split flex min-h-0 flex-1" data-sel={sel ? "1" : "0"}>
       {/* master */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex flex-none flex-wrap items-center gap-2 border-b border-line px-4 py-2">
@@ -55,7 +55,7 @@ export function EmailLog() {
           </span>
         </div>
 
-        <div className="grid flex-none gap-4 border-b border-line px-4 py-1.5 t-label"
+        <div className="rt-head grid flex-none gap-4 border-b border-line px-4 py-1.5 t-label"
              style={{ gridTemplateColumns: LIST_COLS }}>
           <span>Type</span><span>Mottaker</span><span>Opprettet</span>
           <span className="text-right">Omfang</span><span className="text-right">Status</span>
@@ -74,7 +74,7 @@ export function EmailLog() {
       </div>
 
       {/* detail */}
-      <aside className="flex w-[400px] flex-none flex-col border-l border-line">
+      <aside className="mail-detail flex w-[400px] flex-none flex-col border-l border-line">
         {sel ? <Detail id={sel} onClose={() => setSel(null)} /> : <Placeholder />}
       </aside>
     </div>
@@ -90,7 +90,7 @@ function Row({ m, i, active, onClick }: { m: MailRow; i: number; active: boolean
       type="button" onClick={onClick}
       style={{ gridTemplateColumns: LIST_COLS, animationDelay: `${Math.min(i, 16) * 16}ms` }}
       className={cn(
-        "row-in grid w-full items-center gap-4 border-b border-line px-4 py-2 text-left text-[12px] transition-colors",
+        "rt-mail row-in grid w-full items-center gap-4 border-b border-line px-4 py-2 text-left text-[12px] transition-colors",
         active ? "bg-iris/10 shadow-[inset_2px_0_0_var(--iris)]"
           : failed ? "shadow-[inset_2px_0_0_var(--crit)] hover:bg-s2"
           : "hover:bg-s2",

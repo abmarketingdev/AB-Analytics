@@ -966,3 +966,77 @@ h1, h2, h3, h4 {
   main .legend-row + * button,
   main [role="button"][title] { min-height: 0; }
 }
+
+/* Report tables on a phone. Desktop columns are fixed widths that add up to
+   860px, so on 375px the cells ran into each other. Each row becomes a two or
+   three line block with the same order on every tab; header row hidden, small
+   labels come from data-l. */
+@media (max-width: 640px) {
+  .rt-head { display: none !important; }
+  .rt-sched, .rt-mail, .rt-hist {
+    min-width: 0 !important;
+    column-gap: 12px !important;
+    row-gap: 6px !important;
+    padding: 12px 16px !important;
+    align-items: baseline !important;
+  }
+  [data-l]::before {
+    content: attr(data-l);
+    margin-right: 6px;
+    font-family: var(--font-mono, ui-monospace), monospace;
+    font-size: 10.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--fg3);
+  }
+  .rt-sched, .rt-mail, .rt-hist { text-align: left; }
+  .rt-sched > *, .rt-mail > *, .rt-hist > * { min-width: 0; justify-self: stretch !important; text-align: left !important; justify-content: flex-start !important; }
+
+  /* schedules: name | status / next | cron / recipients | channel */
+  .rt-sched {
+    grid-template-columns: minmax(0,1fr) auto !important;
+    grid-template-areas: "name status" "next cron" "rcpt chan";
+  }
+  .rt-sched > :nth-child(1) { grid-area: name; }
+  .rt-sched > :nth-child(2) { grid-area: cron; }
+  .rt-sched > :nth-child(3) { grid-area: next; }
+  .rt-sched > :nth-child(4) { grid-area: rcpt; }
+  .rt-sched > :nth-child(5) { grid-area: chan; }
+  .rt-sched > :nth-child(6) { grid-area: status; }
+  .rt-sched > :nth-child(2), .rt-sched > :nth-child(5), .rt-sched > :nth-child(6) { text-align: right !important; justify-self: end !important; }
+  .rt-sched > :nth-child(4) span { max-width: 100%; }
+
+  /* email log: type | status / recipient / created | scope */
+  .rt-mail {
+    grid-template-columns: minmax(0,1fr) auto !important;
+    grid-template-areas: "type status" "rcpt rcpt" "date scope";
+  }
+  .rt-mail > :nth-child(1) { grid-area: type; }
+  .rt-mail > :nth-child(2) { grid-area: rcpt; }
+  .rt-mail > :nth-child(3) { grid-area: date; }
+  .rt-mail > :nth-child(4) { grid-area: scope; justify-self: end !important; }
+  .rt-mail > :nth-child(5) { grid-area: status; justify-self: end !important; }
+
+  /* history: period + download / doors sellers alerts / source pdf sent */
+  .rt-hist {
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto !important;
+    grid-template-areas: "period period dl" "doors sellers alerts" "source pdf sent";
+    align-items: center !important;
+  }
+  .rt-hist > :nth-child(1) { grid-area: period; }
+  .rt-hist > :nth-child(2) { grid-area: source; }
+  .rt-hist > :nth-child(3) { grid-area: doors; }
+  .rt-hist > :nth-child(4) { grid-area: sellers; }
+  .rt-hist > :nth-child(5) { grid-area: alerts; }
+  .rt-hist > :nth-child(6) { grid-area: pdf; }
+  .rt-hist > :nth-child(7) { grid-area: sent; justify-self: end !important; }
+  .rt-hist > :nth-child(8) { grid-area: dl; justify-self: end !important; }
+  .rt-hist > :nth-child(7) { font-size: 11px; white-space: nowrap; }
+  .rt-hist > :nth-child(5) { justify-self: end !important; }
+
+  /* email log: the 400px detail pane squeezed the list to nothing. List
+     first, detail replaces the placeholder only once a row is picked. */
+  .mail-split { flex-direction: column !important; }
+  .mail-split .mail-detail { width: 100% !important; border-left: 0 !important; border-top: 1px solid var(--line); }
+  .mail-split[data-sel="0"] .mail-detail { display: none !important; }
+}

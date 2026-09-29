@@ -228,7 +228,7 @@ function History() {
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="grid flex-none gap-4 overflow-x-auto border-b border-line px-4 py-1.5 t-label"
+      <div className="rt-head grid flex-none gap-4 overflow-x-auto border-b border-line px-4 py-1.5 t-label"
            style={{ gridTemplateColumns: HIST_COLS, minWidth: 860 }}>
         <span>Periode</span><span>Kilde</span><span className="text-right">Dører</span>
         <span className="text-right">Selgere</span><span className="text-right">Varsler</span>
@@ -240,17 +240,17 @@ function History() {
         {(q.data ?? []).map((r, i) => (
           <div key={r.id}
                style={{ gridTemplateColumns: HIST_COLS, minWidth: 860, animationDelay: `${i * 22}ms` }}
-               className={cn("row-in grid items-center gap-4 border-b border-line px-4 py-2.5 text-[12px] hover:bg-s2",
+               className={cn("rt-hist row-in grid items-center gap-4 border-b border-line px-4 py-2.5 text-[12px] hover:bg-s2",
                              r.status === "failed" && "shadow-[inset_2px_0_0_var(--crit)]")}>
             <span data-num className="font-mono text-[11px] text-fg2">{r.startDate} → {r.endDate}</span>
-            <span className="text-fg3">{r.source === "cron" ? "planlagt" : "manuell"}</span>
-            <span data-num className="text-right">{n(r.totalDoors)}</span>
-            <span data-num className="text-right">{n(r.uniqueWorkers)}</span>
-            <span data-num className="text-right">
+            <span data-l="Kilde" className="text-fg3">{r.source === "cron" ? "planlagt" : "manuell"}</span>
+            <span data-num data-l="Dører" className="text-right">{n(r.totalDoors)}</span>
+            <span data-num data-l="Selgere" className="text-right">{n(r.uniqueWorkers)}</span>
+            <span data-num data-l="Varsler" className="text-right">
               {n(r.alertsCount)}
               {r.criticalAlertsCount > 0 && <span className="ml-1.5 text-crit">({r.criticalAlertsCount})</span>}
             </span>
-            <span data-num className="text-right text-fg3">{kb(r.pdfSizeBytes)}</span>
+            <span data-num data-l="PDF" className="text-right text-fg3">{kb(r.pdfSizeBytes)}</span>
             <span className={cn("flex items-center gap-1.5 font-mono text-[11px]",
                                 r.status === "success" ? "text-fg3" : "text-crit")}>
               {r.status === "success"

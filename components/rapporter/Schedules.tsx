@@ -14,9 +14,9 @@ export function Schedules() {
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="grid gap-4 border-b border-line px-4 py-2 t-label" style={{ gridTemplateColumns: COLS }}>
+      <div className="rt-head grid gap-4 border-b border-line px-4 py-2 t-label" style={{ gridTemplateColumns: COLS }}>
         <span>Jobb</span><span>Cron</span><span>Neste kjøring</span>
-        <span>Mottakere</span><span>Kanal</span><span className="text-right">Status</span>
+        <span>Mottakere</span><span>Kanal</span><span>Status</span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -27,7 +27,7 @@ export function Schedules() {
             key={s.id}
             style={{ gridTemplateColumns: COLS, animationDelay: `${i * 45}ms` }}
             className={cn(
-              "row-in grid items-start gap-4 border-b border-line px-4 py-3.5 text-[12.5px]",
+              "rt-sched row-in grid items-start gap-4 border-b border-line px-4 py-3.5 text-[12.5px]",
               !s.enabled && "opacity-55",
             )}
           >
@@ -39,9 +39,9 @@ export function Schedules() {
               <p className="mt-1 pl-3.5 text-[11px] leading-snug text-fg3">{s.description}</p>
             </div>
 
-            <span data-num className="font-mono text-[11.5px] text-fg2">{s.cron}</span>
+            <span data-num data-l="Cron" className="font-mono text-[11.5px] text-fg2">{s.cron}</span>
 
-            <span data-num className={cn("font-mono text-[11.5px]", s.enabled ? "text-fg1" : "text-fg3")}>
+            <span data-num data-l="Neste" className={cn("font-mono text-[11.5px]", s.enabled ? "text-fg1" : "text-fg3")}>
               {s.enabled ? stamp(s.nextRun) : "—"}
             </span>
 
@@ -61,7 +61,7 @@ export function Schedules() {
 
             <span className="font-mono text-[11px] text-fg3">e-post + PDF</span>
 
-            <span className={cn("justify-self-end font-mono text-[11px]", s.enabled ? "text-ja" : "text-fg3")}>
+            <span className={cn("font-mono text-[11px]", s.enabled ? "text-ja" : "text-fg3")}>
               {s.enabled ? "Aktiv" : "Av"}
             </span>
           </div>
