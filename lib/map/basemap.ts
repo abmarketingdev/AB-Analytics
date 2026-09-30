@@ -1,28 +1,28 @@
 /** Basemap + slippy-tile maths.
  *
- *  The production manager/emp apps already use OpenStreetMap raster tiles
- *  (https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png via Leaflet), so no API
- *  key is needed anywhere in this stack. CARTO's dark-matter raster is the same
- *  OSM data restyled for dark UIs, which is what this console wants — switch
- *  BASEMAP to "osm" for strict parity with the existing apps. */
+ *  The basemap is OUR OWN, served by maps-service. It used to be CARTO's dark raster,
+ *  which now demands an API key and stamps "API KEY REQUIRED" diagonally across every
+ *  tile. Nothing about this page needs a third party: the official Norwegian
+ *  administrative boundaries (SSB/Kartverket) are already in the database and already
+ *  served as vector tiles, and this page is about administrative regions rather than
+ *  street navigation — so the boundaries ARE the right basemap.
+ *
+ *  That also removes every cross-origin request the map used to make: no key, no rate
+ *  limit, no CDN outage, no third party learning which territories the company works.
+ *
+ *    self  → /tiles/{fylke,kommune,grunnkrets}/{z}/{x}/{y}.mvt   (vector, ours)
+ *    osm   → tile.openstreetmap.org raster — kept as an escape hatch for street
+ *            context. OSM's tile policy forbids heavy use, so it is NOT the default.
+ *    none  → flat background only
+ */
 
-export type BasemapId = "carto-dark" | "osm" | "none";
+export type BasemapId = "self" | "osm" | "none";
 
 export const BASEMAP: BasemapId =
-  (process.env.NEXT_PUBLIC_BASEMAP as BasemapId) || "carto-dark";
+  (process.env.NEXT_PUBLIC_BASEMAP as BasemapId) || "self";
 
-export const BASEMAPS: Record<Exclude<BasemapId, "none">, {
-  tiles: string[]; attribution: string; maxzoom: number;
-}> = {
-  "carto-dark": {
-    tiles: [
-      "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-      "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-      "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-    ],
-    attribution: "© OpenStreetMap · © CARTO",
-    maxzoom: 20,
-  },
+/** Raster options only. "self" is vector and is built in lib/map/sources.ts. */
+export const BASEMAPS: Record<"osm", { tiles: string[]; attribution: string; maxzoom: number }> = {
   osm: {
     tiles: [
       "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -33,6 +33,22 @@ export const BASEMAPS: Record<Exclude<BasemapId, "none">, {
     maxzoom: 19,
   },
 };
+
+export const SELF_ATTRIBUTION = "Administrative grenser: SSB / Kartverket";
+
+export const attributionFor = (id: BasemapId) =>
+  id === "self" ? SELF_ATTRIBUTION : id === "osm" ? BASEMAPS.osm.attribution : "";
+
+/** Palette for the self-hosted backdrop. Sea is the page background, land sits a step
+ *  above it, and the boundary lines get quieter as they get smaller — so the campaign
+ *  polygons on top stay the brightest thing on screen. */
+export const LAND = {
+  sea: "#080711",
+  land: "#15131f",
+  coast: "#2b2740",
+  kommune: "#231f33",
+  grunnkrets: "#1d1a2b",
+} as const;
 
 export const TILE_SIZE = 256;
 

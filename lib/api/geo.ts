@@ -106,3 +106,16 @@ export interface AreaStats {
 
 export const fetchAreaStats = (areaId: string, campaignId?: string) =>
   getJSON<AreaStats>(`/api/areas/areas/${areaId}/stats/`, { campaign: campaignId });
+
+// ── the self-hosted basemap backdrop ─────────────────────────────────────────
+/** Official administrative boundaries (SSB/Kartverket) as simplified GeoJSON.
+ *
+ *  The WebGL map reads the same boundaries as vector tiles straight from
+ *  /tiles/{level}/{z}/{x}/{y}.mvt; this is for the no-WebGL renderer, which draws SVG
+ *  paths and has no vector-tile decoder. Cached for a day on both sides — official
+ *  boundaries change once a year at most.
+ */
+export const fetchAdminGeo = (level: "fylke" | "kommune" | "grunnkrets" = "fylke", parent?: string) =>
+  getJSON<GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, {
+    code: string; name: string; level: string;
+  }>>("/api/areas/areas/admin-geo/", { level, parent });

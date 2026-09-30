@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Replay } from "@/lib/api/live";
-import { BASEMAP, BASEMAPS, TILE_SIZE, lat2y, lon2x, tileUrl, zoomForSpan } from "@/lib/map/basemap";
+import { BASEMAP, BASEMAPS, LAND, TILE_SIZE, attributionFor, lat2y, lon2x, tileUrl, zoomForSpan } from "@/lib/map/basemap";
+import { paintLand, useLandRings } from "@/lib/map/useLandBackdrop";
 import { KNOCK_COLOR_JS } from "@/lib/map/layers";
 
 /** Route replay over a raster basemap. Canvas, not SVG: the track is redrawn on
@@ -32,19 +33,22 @@ export function ReplayCanvas({ replay, progress }: { replay: Replay; progress: n
     const pady = (maxy - miny) * 0.14 || 1e-4;
     const spanX = maxx - minx + padx * 2;
     const spanY = maxy - miny + pady * 2;
-    const maxzoom = BASEMAP === "none" ? 18 : BASEMAPS[BASEMAP].maxzoom;
+    const maxzoom = BASEMAP === "osm" ? BASEMAPS.osm.maxzoom : 18;
     const z = Math.min(zoomForSpan(spanX, size.w, maxzoom), zoomForSpan(spanY, size.h, maxzoom));
     return { cx: (minx + maxx) / 2, cy: (miny + maxy) / 2, z: Math.max(11, z) };
   }, [replay, size]);
 
   const scale = Math.pow(2, view.z) * TILE_SIZE;
+  // Same coastline every other map in the console draws, from one shared request.
+  const landRings = useLandRings();
+
   const proj = (lon: number, lat: number): [number, number] => [
     (lon2x(lon) - view.cx) * scale + size.w / 2,
     (lat2y(lat) - view.cy) * scale + size.h / 2,
   ];
 
   const tiles = useMemo(() => {
-    if (BASEMAP === "none") return [];
+    if (BASEMAP !== "osm") return [];
     const z = Math.round(view.z);
     const n = 2 ** z;
     const zScale = n * TILE_SIZE;
@@ -57,7 +61,7 @@ export function ReplayCanvas({ replay, progress }: { replay: Replay; progress: n
         if (y < 0 || y >= n) continue;
         const wx = ((x % n) + n) % n;
         out.push({
-          key: `${z}/${wx}/${y}`, url: tileUrl(BASEMAPS[BASEMAP].tiles, z, wx, y),
+          key: `${z}/${wx}/${y}`, url: tileUrl(BASEMAPS.osm.tiles, z, wx, y),
           left: (x * TILE_SIZE - left) * k, top: (y * TILE_SIZE - top) * k, size: TILE_SIZE * k,
         });
       }
@@ -75,6 +79,7 @@ export function ReplayCanvas({ replay, progress }: { replay: Replay; progress: n
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
+    paintLand(ctx, landRings, proj, LAND.land, LAND.coast);
 
     // assigned territory
     ctx.setLineDash([7, 5]);
@@ -157,7 +162,7 @@ export function ReplayCanvas({ replay, progress }: { replay: Replay; progress: n
     ctx.beginPath();
     ctx.arc(hx, hy, 2.6, 0, 6.283);
     ctx.fill();
-  }, [replay, progress, size, view, scale]);
+  }, [replay, progress, size, view, scale, landRings]);
 
   return (
     <div ref={box} className="relative h-full w-full overflow-hidden bg-canvas">
@@ -170,7 +175,7 @@ export function ReplayCanvas({ replay, progress }: { replay: Replay; progress: n
       </div>
       <canvas ref={cv} className="absolute inset-0" style={{ width: size.w, height: size.h }} />
       <span className="pointer-events-none absolute bottom-1 left-2 font-mono text-[9px] text-fg3">
-        {BASEMAP === "none" ? "" : BASEMAPS[BASEMAP].attribution}
+        {attributionFor(BASEMAP)}
       </span>
     </div>
   );

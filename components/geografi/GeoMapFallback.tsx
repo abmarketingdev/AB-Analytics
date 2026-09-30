@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MonitorCog, Minus, Plus } from "lucide-react";
 import { KNOCK_COLOR_JS, colorAt, fillOpacity, type GeoLayer } from "@/lib/map/layers";
 import {
-  BASEMAP, BASEMAPS, TILE_SIZE, lat2y, lon2x, tileUrl, zoomForSpan,
+  BASEMAP, BASEMAPS, LAND, TILE_SIZE, attributionFor, lat2y, lon2x, tileUrl, zoomForSpan,
 } from "@/lib/map/basemap";
+import { ringsToPaths, useLandRings } from "@/lib/map/useLandBackdrop";
 import type { AreaFeatureProps } from "@/lib/api/geo";
 
 interface Props {
@@ -18,13 +19,16 @@ interface Props {
   onHoverArea: (p: AreaFeatureProps | null) => void;
 }
 
-/** Renderer for machines without WebGL2. Real raster basemap (the same OSM data
- *  the production manager/emp apps use) drawn as <img> tiles, with the campaign
- *  polygons in SVG on top — so it is a genuine map, not floating shapes.
+/** Renderer for machines without WebGL2 — and what most people here actually see, so
+ *  it gets the same data and the same colour ramps as the GL map, not a downgrade.
  *
- *  Projection is true Web Mercator, not the equirectangular approximation this
- *  used before: slippy tiles ARE Mercator, so anything else misaligns the
- *  overlay against the streets. */
+ *  The backdrop is OURS: the official administrative boundaries out of maps-service,
+ *  drawn as SVG paths under the campaign polygons. It used to be CARTO raster tiles,
+ *  which now demand an API key and stamp "API KEY REQUIRED" across the map. This
+ *  renderer cannot decode vector tiles, so it takes the same boundaries as simplified
+ *  GeoJSON instead (one request, cached for a day).
+ *
+ *  Projection is true Web Mercator, matching the GL map exactly. */
 export default function GeoMapFallback({
   areas, knocks, layer, selectedAreaId, focus, onSelectArea, onHoverArea,
 }: Props) {
@@ -45,7 +49,12 @@ export default function GeoMapFallback({
     return () => ro.disconnect();
   }, []);
 
-  const maxzoom = BASEMAP === "none" ? 18 : BASEMAPS[BASEMAP].maxzoom;
+  const maxzoom = BASEMAP === "osm" ? BASEMAPS.osm.maxzoom : 18;
+
+  // The land backdrop. Fylke outlines are enough at every zoom this page uses, and a
+  // single day-cached request beats a grid of tile fetches on a machine already without
+  // hardware acceleration.
+  const landRings = useLandRings();
 
   // fit to the data on first load / when the campaign changes
   useEffect(() => {
@@ -88,7 +97,7 @@ export default function GeoMapFallback({
 
   // ── raster tile grid ───────────────────────────────────────────────────────
   const tiles = useMemo(() => {
-    if (!view || BASEMAP === "none") return [];
+    if (!view || BASEMAP !== "osm") return [];
     const z = Math.round(view.z);
     const n = Math.pow(2, z);
     const zScale = n * TILE_SIZE;
@@ -112,7 +121,7 @@ export default function GeoMapFallback({
         const wx = ((x % n) + n) % n; // wrap the antimeridian
         out.push({
           key: `${z}/${wx}/${y}`,
-          url: tileUrl(BASEMAPS[BASEMAP].tiles, z, wx, y),
+          url: tileUrl(BASEMAPS.osm.tiles, z, wx, y),
           left: (x * TILE_SIZE - left) * k,
           top: (y * TILE_SIZE - top) * k,
           size: TILE_SIZE * k,
@@ -121,6 +130,11 @@ export default function GeoMapFallback({
     }
     return out;
   }, [view, size, scale]);
+
+  const landPaths = useMemo(
+    () => (view ? ringsToPaths(landRings, project) : []),
+    [landRings, project, view],
+  );
 
   const paths = useMemo(
     () =>
@@ -178,22 +192,33 @@ export default function GeoMapFallback({
       onPointerUp={() => { drag.current = null; }}
       onPointerLeave={() => { drag.current = null; }}
     >
-      {/* basemap */}
-      <div className="absolute inset-0" aria-hidden="true">
-        {tiles.map((t) => (
-          <img
-            key={t.key}
-            src={t.url}
-            alt=""
-            draggable={false}
-            className="absolute select-none"
-            style={{
-              left: t.left, top: t.top, width: t.size, height: t.size,
-              opacity: 0.72, filter: "saturate(0.75) contrast(1.05)",
-            }}
-          />
-        ))}
-      </div>
+      {/* basemap — ours when BASEMAP is "self", raster tiles only on the osm escape hatch */}
+      {tiles.length > 0 && (
+        <div className="absolute inset-0" aria-hidden="true">
+          {tiles.map((t) => (
+            <img
+              key={t.key}
+              src={t.url}
+              alt=""
+              draggable={false}
+              className="absolute select-none"
+              style={{
+                left: t.left, top: t.top, width: t.size, height: t.size,
+                opacity: 0.72, filter: "saturate(0.75) contrast(1.05)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {landPaths.length > 0 && (
+        <svg width={size.w} height={size.h} className="absolute inset-0 block" aria-hidden="true">
+          {landPaths.map((d, i) => (
+            <path key={i} d={d} fill={LAND.land} stroke={LAND.coast} strokeWidth={0.8}
+                  strokeLinejoin="round" />
+          ))}
+        </svg>
+      )}
 
       {/* campaign polygons */}
       <svg width={size.w} height={size.h} className="absolute inset-0 block">
@@ -230,7 +255,7 @@ export default function GeoMapFallback({
       </div>
 
       <span className="pointer-events-none absolute bottom-1 left-2 font-mono text-[9px] text-fg3">
-        {BASEMAP === "none" ? "" : BASEMAPS[BASEMAP].attribution}
+        {attributionFor(BASEMAP)}
       </span>
 
       <div className="pointer-events-none absolute right-3 top-3 flex max-w-[248px] items-start gap-2 rounded-lg border border-warn/40 bg-s1/95 px-3 py-2 backdrop-blur">

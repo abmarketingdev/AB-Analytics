@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DayTrack, TrackPoint } from "@/lib/api/tracking";
-import { BASEMAP, BASEMAPS, TILE_SIZE, lat2y, lon2x, tileUrl, zoomForSpan } from "@/lib/map/basemap";
+import { BASEMAP, BASEMAPS, LAND, TILE_SIZE, attributionFor, lat2y, lon2x, tileUrl, zoomForSpan } from "@/lib/map/basemap";
+import { paintLand, useLandRings } from "@/lib/map/useLandBackdrop";
 import { KNOCK_COLOR_JS } from "@/lib/map/layers";
 
 /** One rep's day, drawn as a single continuous line: the part loaded from the
@@ -47,7 +48,7 @@ export function TrackMap({
     const miny = Math.min(...ys), maxy = Math.max(...ys);
     const padx = (maxx - minx) * 0.18 || 4e-4;
     const pady = (maxy - miny) * 0.18 || 3e-4;
-    const maxzoom = BASEMAP === "none" ? 18 : BASEMAPS[BASEMAP].maxzoom;
+    const maxzoom = BASEMAP === "osm" ? BASEMAPS.osm.maxzoom : 18;
     const z = follow
       ? 16
       : Math.min(
@@ -62,13 +63,16 @@ export function TrackMap({
   }, [points, head, follow, size, nudge]);
 
   const scale = 2 ** view.z * TILE_SIZE;
+  // Same coastline every other map in the console draws, from one shared request.
+  const landRings = useLandRings();
+
   const proj = (lon: number, lat: number): [number, number] => [
     (lon2x(lon) - view.cx) * scale + size.w / 2,
     (lat2y(lat) - view.cy) * scale + size.h / 2,
   ];
 
   const tiles = useMemo(() => {
-    if (BASEMAP === "none") return [];
+    if (BASEMAP !== "osm") return [];
     const z = Math.round(view.z);
     const n = 2 ** z;
     const zScale = n * TILE_SIZE;
@@ -81,7 +85,7 @@ export function TrackMap({
         if (y < 0 || y >= n) continue;
         const wx = ((x % n) + n) % n;
         out.push({
-          key: `${z}/${wx}/${y}`, url: tileUrl(BASEMAPS[BASEMAP].tiles, z, wx, y),
+          key: `${z}/${wx}/${y}`, url: tileUrl(BASEMAPS.osm.tiles, z, wx, y),
           left: (x * TILE_SIZE - left) * k, top: (y * TILE_SIZE - top) * k, size: TILE_SIZE * k,
         });
       }
@@ -99,6 +103,7 @@ export function TrackMap({
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
+    paintLand(ctx, landRings, proj, LAND.land, LAND.coast);
 
     // assigned territory
     ctx.setLineDash([7, 5]);
@@ -183,7 +188,7 @@ export function TrackMap({
     ctx.moveTo(hx, hy);
     ctx.lineTo(hx + Math.cos(a) * 11, hy + Math.sin(a) * 11);
     ctx.stroke();
-  }, [points, head, size, view, scale, track]);
+  }, [points, head, size, view, scale, track, landRings]);
 
   return (
     <div
@@ -212,7 +217,7 @@ export function TrackMap({
       <canvas ref={cv} className="absolute inset-0" style={{ width: size.w, height: size.h }} />
 
       <span className="pointer-events-none absolute bottom-1 left-2 font-mono text-[9px] text-fg3">
-        {BASEMAP === "none" ? "" : BASEMAPS[BASEMAP].attribution}
+        {attributionFor(BASEMAP)}
       </span>
     </div>
   );
