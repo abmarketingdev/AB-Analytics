@@ -97,7 +97,7 @@ export function FilterBar() {
       set: (v: string) => { if (v !== "custom") { setPeriod(v as PeriodValue); push({ periode: v, fra: "", til: "" }); } },
     },
     {
-      key: "area", label: "Fylke", minw: 120, value: area, display: AREAS.find((a) => a.id === area)?.name, isSet: area !== "all",
+      key: "area", label: "By", minw: 120, value: area, display: AREAS.find((a) => a.id === area)?.name, isSet: area !== "all",
       dot: area === "all" ? "var(--tx3)" : "var(--accent)",
       options: AREAS.map<Opt>((a) => ({ value: a.id, label: a.name })),
       set: (v: string) => { setArea(v); push({ by: v }); },

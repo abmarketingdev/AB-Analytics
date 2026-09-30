@@ -31,7 +31,7 @@ export function useFilterOptions() {
     if (!q.data) return;
     setOptions({
       campaigns: q.data.campaigns.map((c) => ({ id: c.id, name: c.name, color: c.color })),
-      areas: q.data.fylker.map((f) => ({ id: f.id, name: f.name })),
+      areas: q.data.cities.map((c) => ({ id: c.id, name: c.name })),
       chiefs: q.data.chiefs.map((c) => ({ id: c.id, name: c.name })),
       teams: q.data.teams.map((t) => ({
         id: t.id, name: t.name, chiefId: t.chief_id, campaignId: t.campaign_id,

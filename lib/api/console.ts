@@ -55,7 +55,7 @@ export interface ConsoleAttention {
 }
 
 export interface ConsoleRegion {
-  id: string; name: string; doors: number; ja: number; ja_rate: number; areas: number;
+  id: string; name: string; doors: number; ja: number; ja_rate: number; people: number;
 }
 
 /** Matches the ActivityTree prop types (MemberRow / TeamNode / ChiefNode) so the board
@@ -100,7 +100,7 @@ export interface ConsoleOverview {
   regions: ConsoleRegion[];
   org_activity: { chiefs: ConsoleChief[] };
   scope: {
-    role: string; campaign_id: string | null; fylke: string | null;
+    role: string; campaign_id: string | null; city: string | null;
     range: string; start: string; end: string; people: number | null;
   };
 }
@@ -114,14 +114,15 @@ export interface OverviewParams {
   campaign_id?: string;
   chief_id?: string;
   team_id?: string;
-  fylke?: string;
+  city?: string;
 }
 
 export interface FilterOptions {
   campaigns: { id: string; name: string; color: string | null }[];
   teams: { id: string; name: string; campaign_id: string | null; chief_id: string | null }[];
   chiefs: { id: string; name: string }[];
-  fylker: { id: string; name: string }[];
+  /** ordered by volume — ~590 places exist, the busiest few are what anyone picks */
+  cities: { id: string; name: string; doors: number }[];
   ranges: { value: string; label: string }[];
 }
 
@@ -132,7 +133,7 @@ const inflight = new Map<string, Promise<ConsoleOverview>>();
 
 const keyOf = (p: OverviewParams) =>
   JSON.stringify([p.range ?? "", p.start ?? "", p.end ?? "", p.campaign_id ?? "",
-                  p.chief_id ?? "", p.team_id ?? "", p.fylke ?? ""]);
+                  p.chief_id ?? "", p.team_id ?? "", p.city ?? ""]);
 
 /** The whole front page in one request. Nine panels, one network call: concurrent
  *  callers with the same filters share the in-flight promise. */

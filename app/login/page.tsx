@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { RadarMark } from "@/components/brand/RadarMark";
 import { BootSequence, TAGLINE } from "@/components/brand/BootSequence";
 import { signIn, getSession } from "@/lib/auth";
-import { n } from "@/lib/format";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,21 +13,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [booting, setBooting] = useState(false);
   const [name, setName] = useState("");
-  const [doors, setDoors] = useState(38412);
   const userRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (getSession()) router.replace("/");
     userRef.current?.focus();
   }, [router]);
-
-  // The platform-wide counter, ticking. Unauthenticated in production.
-  // Paused during boot: nothing behind the overlay should be re-rendering.
-  useEffect(() => {
-    if (booting) return;
-    const id = window.setInterval(() => setDoors((d) => d + 1 + Math.floor(Math.random() * 3)), 2400);
-    return () => window.clearInterval(id);
-  }, [booting]);
 
   const [busy, setBusy] = useState(false);
 
@@ -107,13 +97,6 @@ export default function LoginPage() {
             For administratorer, salgssjefer og teamledere.
           </p>
         </form>
-
-        <div className="mt-6 flex items-center justify-between font-mono text-[11px] text-fg3">
-          <span>
-            <span className="text-ja">●</span> 6 tjenester · online
-          </span>
-          <span data-num suppressHydrationWarning>{n(doors)} dører banket</span>
-        </div>
       </div>
     </main>
   );
