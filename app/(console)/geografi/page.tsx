@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { ErrorState } from "@/components/ui/Skeleton";
+import { ErrorState, EmptyState } from "@/components/ui/ErrorState";
 import { useQuery } from "@tanstack/react-query";
 import { Layers, X } from "lucide-react";
 import { CampaignGate } from "@/components/geografi/CampaignGate";
@@ -13,7 +13,6 @@ import {
   type AreaFeatureProps, type GeoNode,
 } from "@/lib/api/geo";
 import { LAYERS, legendFor, type GeoLayer } from "@/lib/map/layers";
-import { USE_MVT } from "@/lib/map/sources";
 import { useFilter, campaignLabel } from "@/lib/store/filter";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -47,21 +46,23 @@ export default function GeografiPage() {
     enabled: campaign !== "all",
   });
 
+  // Scoped to the region in view: a campaign can span 9 000 areas, and shipping every
+  // polygon is megabytes of geometry the map cannot draw usefully at national zoom.
   const areas = useQuery({
-    queryKey: ["geo-areas", campaign],
-    queryFn: () => fetchAreaGeoJson(campaign),
+    queryKey: ["geo-areas", campaign, here.level, here.code],
+    queryFn: () => fetchAreaGeoJson(campaign, here.level, here.code),
     enabled: campaign !== "all",
   });
 
   const knocks = useQuery({
-    queryKey: ["geo-knocks", campaign],
-    queryFn: () => fetchKnockPoints(campaign),
+    queryKey: ["geo-knocks", campaign, here.level, here.code],
+    queryFn: () => fetchKnockPoints(campaign, here.level, here.code),
     enabled: campaign !== "all" && layer === "tetthet",
   });
 
   const stats = useQuery({
-    queryKey: ["area-stats", selected],
-    queryFn: () => fetchAreaStats(selected!),
+    queryKey: ["area-stats", selected, campaign],
+    queryFn: () => fetchAreaStats(selected!, campaign),
     enabled: !!selected,
   });
 
@@ -124,9 +125,15 @@ export default function GeografiPage() {
         <aside className="geo-rail flex w-[276px] flex-none flex-col border-r border-line p-3">
           {children.isPending && <div className="h-full animate-pulse rounded-lg bg-s1" />}
           {children.isError && (
-            <ErrorState what="geografi" onRetry={() => children.refetch()} compact />
+            <ErrorState what="geografi" error={children.error} onRetry={() => children.refetch()} compact />
           )}
-          {children.data && (
+          {children.data?.length === 0 && (
+            <EmptyState
+              what="Ingen områder her"
+              hint="Denne kampanjen har ingen tegnede områder i dette området ennå."
+            />
+          )}
+          {children.data && children.data.length > 0 && (
             <GeoDrillList
               nodes={children.data}
               level={here.level}
@@ -212,7 +219,7 @@ export default function GeografiPage() {
           )}
 
           <span className="pointer-events-none absolute bottom-3 right-16 font-mono text-[9.5px] text-fg3">
-            {noGpu ? "SVG · uten WebGL" : USE_MVT ? "MVT · maps-service" : "MOCK · GeoJSON (MVT-klar)"}
+            {noGpu ? "SVG · uten WebGL" : "GeoJSON · maps-service"}
           </span>
         </div>
 
@@ -232,7 +239,7 @@ export default function GeografiPage() {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               {stats.isPending && <div className="h-40 animate-pulse rounded-lg bg-s1" />}
-              {stats.isError && <ErrorState what="områdestatistikk" onRetry={() => stats.refetch()} compact />}
+              {stats.isError && <ErrorState what="områdestatistikk" error={stats.error} onRetry={() => stats.refetch()} compact />}
               {stats.data && <AreaStatsPanel s={stats.data} />}
             </div>
           </aside>
