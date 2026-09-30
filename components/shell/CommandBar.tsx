@@ -6,8 +6,8 @@ import { LogOut, Rows3, Rows4 } from "lucide-react";
 import { RadarBadge } from "@/components/brand/RadarMark";
 import { useUi } from "@/lib/store/ui";
 import { clock } from "@/lib/format";
-import { getSession, signOut } from "@/lib/auth";
-import { orgCounts } from "@/lib/mock/counts";
+import { getSession, signOut , roleLabel, type ConsoleRole } from "@/lib/auth";
+import { useOverviewQuery } from "@/lib/api/useOverview";
 import { cn } from "@/lib/cn";
 
 export function CommandBar() {
@@ -17,14 +17,15 @@ export function CommandBar() {
   const [sync, setSync] = useState<string>("");
   const [initials, setInitials] = useState("··");
   const [who, setWho] = useState<{ name: string; role: string } | null>(null);
-  const [online, setOnline] = useState<number | null>(null);
+  // Real presence, from the same overview read the rest of the shell uses.
+  const overview = useOverviewQuery();
+  const online = overview.data?.stats.online_now ?? null;
 
   // mounted-guard: a live clock rendered on the server always hydrates mismatched
   useEffect(() => {
     const ses = getSession();
     setInitials(ses?.initials ?? "··");
     if (ses) setWho({ name: ses.name, role: ses.role });
-    setOnline(orgCounts().online);
     const tick = () => setNow(clock(new Date()));
     tick();
     setSync(clock(new Date()));
@@ -83,7 +84,7 @@ export function CommandBar() {
         <span className="hidden flex-col items-end leading-tight lg:flex" suppressHydrationWarning>
           <span className="text-[11.5px] font-medium text-fg1">{who?.name ?? "—"}</span>
           <span className="text-[10px] uppercase tracking-[0.08em] text-fg3">
-            {who?.role === "admin" ? "Administrator · ser alt" : who?.role ?? ""}
+            {who ? roleLabel(who.role as ConsoleRole) + (who.role === "admin" ? " · ser alt" : "") : ""}
           </span>
         </span>
         <span
@@ -91,7 +92,7 @@ export function CommandBar() {
             "grid h-[27px] w-[27px] flex-none place-items-center rounded-[9px] text-[10.5px] font-bold text-white",
           )}
           style={{ background: "var(--iris)" }}
-          title={who ? `${who.name} · ${who.role}` : undefined}
+          title={who ? `${who.name} · ${roleLabel(who.role as ConsoleRole)}` : undefined}
           suppressHydrationWarning
         >
           {initials}

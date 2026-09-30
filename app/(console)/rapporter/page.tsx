@@ -7,7 +7,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { EmailLog } from "@/components/rapporter/EmailLog";
 import { Schedules } from "@/components/rapporter/Schedules";
 import { buildPreview, fetchMailLog, fetchReportHistory } from "@/lib/api/reports";
-import { CAMPAIGNS, CHIEFS } from "@/lib/store/filter";
+import { useFilter } from "@/lib/store/filter";
 import { n, n1, stamp } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -57,6 +57,9 @@ export default function RapporterPage() {
 
 // ── build ────────────────────────────────────────────────────────────────────
 function Builder() {
+  // Real campaigns and chiefs, from the filter options the shell loaded once.
+  const CAMPAIGNS = useFilter((f) => f.campaigns);
+  const CHIEFS = useFilter((f) => f.chiefs);
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
 

@@ -1,8 +1,7 @@
 "use client";
 
-import type { OutcomeMix, FeedItem, FeedKind } from "@/lib/api/dashboard";
-import type { Presence } from "@/lib/api/presence";
-import { n, pct } from "@/lib/format";
+import type { ConsoleOutcome, ConsoleRegion, ConsoleActivity } from "@/lib/api/console";
+import { n, n1, pct } from "@/lib/format";
 
 const CARD: React.CSSProperties = { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: 18 };
 const H2: React.CSSProperties = { margin: 0, font: "600 14.5px/1.2 'IBM Plex Sans', sans-serif" };
@@ -17,7 +16,7 @@ function LivePip() {
 }
 
 /** Utfall — a segmented mix bar over the outcome list + contact/conversion. */
-export function OutcomePanel({ outcome }: { outcome: OutcomeMix }) {
+export function OutcomePanel({ outcome }: { outcome: ConsoleOutcome }) {
   const items = [
     { label: "Nei", n: outcome.nei, color: "var(--o-nei)" },
     { label: "Ikke hjemme", n: outcome.ikke_hjemme, color: "var(--o-ih)" },
@@ -57,88 +56,94 @@ export function OutcomePanel({ outcome }: { outcome: OutcomeMix }) {
 }
 
 /** Regioner i felt — live coverage by region with a tilsyn warning. */
-export function RegionsPanel({ presence }: { presence: Presence }) {
-  const regions = presence.regions;
-  const maxActive = Math.max(1, ...regions.map((r) => r.active));
-  const fill = (h: string) => (h === "alert" ? "var(--neg)" : h === "watch" ? "var(--warn)" : "var(--accent)");
-  const warnings = regions
-    .filter((r) => r.alerts > 0)
-    .map((r) => `${r.name}: ${r.alerts} person${r.alerts > 1 ? "er" : ""} krever tilsyn`);
+export function RegionsPanel({ regions }: { regions: ConsoleRegion[] }) {
+  // Real geography, from AreaReplica.fylke on the rollups. The previous version drew a
+  // map from per-region x/y coordinates that the read-model does not have — it was the
+  // mock's invention, so the map is gone and the ranking it implied is now explicit.
+  const top = regions.slice(0, 8);
+  const maxDoors = Math.max(1, ...top.map((r) => r.doors));
 
   return (
     <section style={CARD}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h2 style={H2}>Regioner i felt</h2>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10.5px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--pos)" }}><LivePip />SANNTID</span>
+        <h2 style={H2}>Fylker</h2>
+        <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--tx3)" }}>
+          {regions.length} I PERIODEN
+        </span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
-        {regions.map((r) => (
-          <div key={r.id} style={{ padding: "11px 0", borderBottom: "1px solid var(--line)" }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-              <span style={{ font: "500 12.5px/1 'IBM Plex Sans', sans-serif" }}>{r.name}</span>
-              <span style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx2)" }}>{r.doorsPerHour.toFixed(1).replace(".", ",")} d/t</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-              <div style={{ flex: 1, height: 7, borderRadius: 4, background: "var(--sunk)", overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 4, width: `${Math.round((r.active / maxActive) * 100)}%`, background: fill(r.health) }} />
+
+      {top.length === 0 ? (
+        <p style={{ margin: "14px 0 2px", font: "400 12px/1.5 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
+          Ingen registrerte dører i denne perioden.
+        </p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
+          {top.map((r) => (
+            <div key={r.id} style={{ padding: "11px 0", borderBottom: "1px solid var(--line)" }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+                <span style={{ font: "500 12.5px/1 'IBM Plex Sans', sans-serif" }}>{r.name}</span>
+                <span style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx2)" }}>
+                  {n1(r.ja_rate)} % ja
+                </span>
               </div>
-              <span style={{ font: "500 11.5px/1 'IBM Plex Mono', monospace", color: "var(--tx)", width: 62, textAlign: "right", whiteSpace: "nowrap" }}>{r.active} i felt</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+                <div style={{ flex: 1, height: 7, borderRadius: 4, background: "var(--sunk)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 4, width: `${Math.round((r.doors / maxDoors) * 100)}%`, background: "var(--accent)" }} />
+                </div>
+                <span style={{ font: "500 11.5px/1 'IBM Plex Mono', monospace", color: "var(--tx)", width: 68, textAlign: "right", whiteSpace: "nowrap" }}>
+                  {n(r.doors)} dører
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      {warnings.slice(0, 2).map((w, i) => (
-        <div key={i} style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, font: "400 11.5px/1.3 'IBM Plex Sans', sans-serif", color: "var(--warn)" }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 4l9 16H3z" /><path d="M12 10v4" /></svg>
-          {w}
+          ))}
         </div>
-      ))}
+      )}
     </section>
   );
 }
 
-const KIND: Record<FeedKind, { label: string; color: string; chipBg: string }> = {
-  ja: { label: "ja", color: "var(--o-ja)", chipBg: "rgba(61,220,151,.14)" },
-  nei: { label: "nei", color: "var(--o-nei)", chipBg: "rgba(139,144,166,.16)" },
-  ikke_hjemme: { label: "ikke hjemme", color: "var(--o-ih)", chipBg: "rgba(201,169,97,.14)" },
-  folg_opp: { label: "følg opp", color: "var(--o-fo)", chipBg: "rgba(90,169,255,.12)" },
-  proximity: { label: "nærhet", color: "var(--pink)", chipBg: "rgba(255,122,184,.12)" },
-  session: { label: "økt", color: "var(--tx2)", chipBg: "var(--panel2)" },
+/** The console feed carries the knock's outcome as a `tone`, so the chip styling keys
+ *  off that rather than a separate feed-kind vocabulary. */
+const TONE: Record<string, { color: string; chipBg: string }> = {
+  good:    { color: "var(--o-ja)",  chipBg: "rgba(61,220,151,.14)" },
+  bad:     { color: "var(--o-nei)", chipBg: "rgba(139,144,166,.16)" },
+  warn:    { color: "var(--o-fo)",  chipBg: "rgba(90,169,255,.12)" },
+  neutral: { color: "var(--o-ih)",  chipBg: "rgba(201,169,97,.14)" },
 };
 
-function ago(at: number, now: number) {
-  const s = Math.max(0, Math.round((now - at) / 1000));
-  return s < 60 ? `${s} s` : `${Math.round(s / 60)} min`;
-}
-
 /** Hendelser — the live event stream. */
-export function EventsFeed({ feed }: { feed: FeedItem[] }) {
-  const now = Date.now();
-  const rate = feed.length > 1
-    ? Math.max(1, Math.round(60000 / ((feed[0].at - feed[feed.length - 1].at) / (feed.length - 1))))
-    : 0;
+export function EventsFeed({ feed }: { feed: ConsoleActivity[] }) {
+  // The payload is the last N knocks, newest first, each with the Oslo wall-clock time
+  // the knock was recorded. No synthetic "events/min": the span of a 20-row window says
+  // nothing reliable about rate, and the old figure was computed from mock timestamps.
+  const span = feed.length > 1 ? `${feed[feed.length - 1].time}–${feed[0].time}` : "";
   return (
     <section style={{ flex: 1, minHeight: 340, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px 12px", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
           <h2 style={H2}>Hendelser</h2>
-          <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{rate} hendelser/min</span>
+          <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{span}</span>
         </div>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10.5px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--pos)" }}><LivePip />LIVE</span>
       </div>
       <div style={{ position: "relative", flex: 1, overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden", padding: "6px 18px 0" }}>
+          {feed.length === 0 && (
+            <p style={{ margin: "10px 0 0", font: "400 12px/1.5 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
+              Ingen hendelser i dette utvalget ennå.
+            </p>
+          )}
           {feed.map((e, i) => {
-            const k = KIND[e.kind];
-            const where = e.text.includes(" · ") ? e.text.slice(e.text.indexOf(" · ") + 3) : e.text;
+            const k = TONE[e.tone] ?? TONE.neutral;
+            const where = e.campaign ? `${e.location} · ${e.campaign}` : e.location;
             return (
               <div key={e.id} style={{ position: "relative", display: "grid", gridTemplateColumns: "44px 1fr", gap: 10, alignItems: "baseline", padding: "7px 0", borderRadius: 7, animation: i === 0 ? "dc-feedIn .5s ease-out both" : undefined }}>
-                <span style={{ font: "400 10.5px/1.5 'IBM Plex Mono', monospace", color: i === 0 ? "var(--tx2)" : "var(--tx3)", textAlign: "right" }}>{ago(e.at, now)}</span>
+                <span style={{ font: "400 10.5px/1.5 'IBM Plex Mono', monospace", color: i === 0 ? "var(--tx2)" : "var(--tx3)", textAlign: "right" }}>{e.time}</span>
                 <div style={{ position: "relative", minWidth: 0, paddingLeft: 15, borderLeft: "1px solid var(--line)" }}>
                   <span style={{ position: "absolute", left: -4, top: 5, width: 7, height: 7, borderRadius: "50%", background: k.color, boxShadow: "0 0 0 3px var(--panel)" }} />
                   <div className="feed-line" style={{ display: "flex", alignItems: "baseline", gap: 7, minWidth: 0 }}>
-                    <span style={{ font: "600 12px/1.3 'IBM Plex Sans', sans-serif", whiteSpace: "nowrap" }}>{e.person}</span>
-                    <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "4px 4px", borderRadius: 5, background: k.chipBg, color: k.color, flex: "none" }}>{k.label}</span>
+                    <span style={{ font: "600 12px/1.3 'IBM Plex Sans', sans-serif", whiteSpace: "nowrap" }}>{e.agent}</span>
+                    <span style={{ font: "500 10.5px/1 'IBM Plex Sans', sans-serif", padding: "4px 4px", borderRadius: 5, background: k.chipBg, color: k.color, flex: "none" }}>{e.action}</span>
                     <span className="wrap-sm feed-where" style={{ font: "400 10.5px/1.4 'IBM Plex Mono', monospace", color: "var(--tx3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{where}</span>
                   </div>
                 </div>

@@ -3,9 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/Select";
-import {
-  CAMPAIGNS, CHIEFS, PERIODS, teamsFor, useFilter, type PeriodValue,
-} from "@/lib/store/filter";
+import { PERIODS, teamsFor, useFilter, type PeriodValue } from "@/lib/store/filter";
 
 /** One filter scopes the entire application, and it lives in the URL so a view
  *  is a shareable link — paste "the exact thing I'm looking at" into Slack. */
@@ -15,6 +13,8 @@ export function GlobalFilter() {
   const params = useSearchParams();
   const { period, campaign, chief, team, setPeriod, setCampaign, setChief, setTeam, hydrate } =
     useFilter();
+  const CAMPAIGNS = useFilter((f) => f.campaigns);
+  const CHIEFS = useFilter((f) => f.chiefs);
 
   // URL → store, once per navigation
   useEffect(() => {
@@ -57,7 +57,7 @@ export function GlobalFilter() {
         value={campaign}
         isSet={campaign !== "all"}
         options={CAMPAIGNS.map((c) => ({
-          value: c.id, label: c.name, color: c.id === "all" ? undefined : c.color,
+          value: c.id, label: c.name, color: c.id === "all" ? undefined : c.color ?? undefined,
         }))}
         onChange={(v) => { setCampaign(v); push({ kampanje: v }); }}
       />

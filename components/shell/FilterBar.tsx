@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useOverviewQuery } from "@/lib/api/useOverview";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  AREAS, CAMPAIGNS, CHIEFS, PERIODS, teamsFor, useFilter, type PeriodValue,
-} from "@/lib/store/filter";
-import { TOTAL_DOORS } from "@/lib/mock/world";
+import { PERIODS, teamsFor, useFilter, type PeriodValue } from "@/lib/store/filter";
 import { n } from "@/lib/format";
 import { Kbd } from "@/components/ui/Kbd";
 import { useUi } from "@/lib/store/ui";
@@ -46,7 +44,20 @@ export function FilterBar() {
     period, area, campaign, chief, team, customFrom, customTo,
     setPeriod, setArea, setCampaign, setChief, setTeam, setCustomRange, hydrate,
   } = useFilter();
+  // Options come from the server (see useFilterOptions in the shell). Until they land
+  // each picker holds only its "Alle …" row, which is exactly what should be selectable.
+  const AREAS = useFilter((f) => f.areas);
+  const CAMPAIGNS = useFilter((f) => f.campaigns);
+  const CHIEFS = useFilter((f) => f.chiefs);
+  const optionsStatus = useFilter((f) => f.optionsStatus);
+  const optionsError = useFilter((f) => f.optionsError);
   const [open, setOpen] = useState<string | null>(null);
+
+  // "dører i utvalget" used to print a mock constant that never moved. It is the real
+  // period total now, read from the SAME query the page runs — react-query dedupes on
+  // the key, so the bar adds no request of its own.
+  const doorsQuery = useOverviewQuery();
+  const periodDoors = doorsQuery.data?.stats.period_doors;
   // On a phone the five filters were 350px of chrome above the first number,
   // so they fold behind one summary button and the data starts at the top.
   const [showFilters, setShowFilters] = useState(false);
@@ -86,7 +97,7 @@ export function FilterBar() {
       set: (v: string) => { if (v !== "custom") { setPeriod(v as PeriodValue); push({ periode: v, fra: "", til: "" }); } },
     },
     {
-      key: "area", label: "By", minw: 120, value: area, display: AREAS.find((a) => a.id === area)?.name, isSet: area !== "all",
+      key: "area", label: "Fylke", minw: 120, value: area, display: AREAS.find((a) => a.id === area)?.name, isSet: area !== "all",
       dot: area === "all" ? "var(--tx3)" : "var(--accent)",
       options: AREAS.map<Opt>((a) => ({ value: a.id, label: a.name })),
       set: (v: string) => { setArea(v); push({ by: v }); },
@@ -94,7 +105,7 @@ export function FilterBar() {
     {
       key: "campaign", label: "Kampanje", minw: 150, value: campaign, display: CAMPAIGNS.find((c) => c.id === campaign)?.name, isSet: campaign !== "all",
       dot: campaign === "all" ? "var(--tx3)" : campaignColor(campaign) ?? "var(--accent)",
-      options: CAMPAIGNS.map<Opt>((c) => ({ value: c.id, label: c.name, color: c.id === "all" ? undefined : c.color })),
+      options: CAMPAIGNS.map<Opt>((c) => ({ value: c.id, label: c.name, color: c.id === "all" ? undefined : c.color ?? undefined })),
       set: (v: string) => { setCampaign(v); push({ kampanje: v }); },
     },
     {
@@ -127,6 +138,12 @@ export function FilterBar() {
     <div className="dc filter-bar" data-theme="dark"
          style={{ position: "relative", zIndex: 19, display: "flex", alignItems: "center", gap: 14, padding: "12px 20px", background: "var(--panel)", borderBottom: "1px solid var(--line)", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
       {open && <div onClick={() => setOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 25 }} />}
+      {optionsStatus === "error" && (
+        <span role="alert" title={optionsError ?? undefined}
+              style={{ font: "500 11px/1 'IBM Plex Sans', sans-serif", color: "var(--warn)", whiteSpace: "nowrap" }}>
+          Kunne ikke laste filtervalg
+        </span>
+      )}
 
       <button className="filter-toggle dc-hover" onClick={() => setShowFilters((v) => !v)}
               aria-expanded={showFilters} aria-label="Vis eller skjul filtre"
@@ -193,7 +210,7 @@ export function FilterBar() {
         Detaljer
       </button>
 
-      <span className="doors-total" style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{n(TOTAL_DOORS)} dører i utvalget</span>
+      <span className="doors-total" style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{periodDoors === undefined ? "—" : n(periodDoors)} dører i utvalget</span>
     </div>
   );
 }

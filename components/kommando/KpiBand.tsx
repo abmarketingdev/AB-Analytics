@@ -1,7 +1,7 @@
 "use client";
 
-import type { Stats, Daily, OutcomeMix } from "@/lib/api/dashboard";
-import type { Attention } from "@/lib/mock/world";
+import type { ConsoleStats, ConsoleOutcome, ConsoleAttention } from "@/lib/api/console";
+import type { Daily } from "@/lib/api/toDaily";
 import { n, pct } from "@/lib/format";
 import { spark } from "./util";
 import { useRouter } from "next/navigation";
@@ -25,7 +25,7 @@ const SECONDARY_NUM = "600 22px/1 'IBM Plex Mono', monospace";
 export function KpiBand({
   daily, outcome, stats, attention, jaSpark, avgJaRate, fieldDots,
 }: {
-  daily: Daily; outcome: OutcomeMix; stats: Stats; attention: Attention[];
+  daily: Daily; outcome: ConsoleOutcome; stats: ConsoleStats; attention: ConsoleAttention[];
   jaSpark: number[]; avgJaRate: number; fieldDots: string[];
 }) {
   const router = useRouter();
@@ -39,10 +39,10 @@ export function KpiBand({
 
   const up = daily.deltaPct > 0;
   const flat = daily.deltaPct === 0;
-  const pctNum = Math.round((daily.total / daily.totalNormal) * 100);
+  const pctNum = daily.totalNormal ? Math.round((daily.total / daily.totalNormal) * 100) : 0;
   const js = spark(jaSpark, 100, 22, 3);
 
-  const sev = (a: Attention) => (a.score >= 85 ? "crit" : a.score >= 62 ? "hoy" : "mid");
+  const sev = (a: ConsoleAttention) => (a.score >= 85 ? "crit" : a.score >= 62 ? "hoy" : "mid");
   const segColor = { crit: "var(--neg)", hoy: "var(--warn)", mid: "var(--info)" } as const;
   const nCrit = attention.filter((a) => sev(a) === "crit").length;
   const nHoy = attention.filter((a) => sev(a) === "hoy").length;
@@ -115,7 +115,7 @@ export function KpiBand({
           ))}
         </div>
         <div className="detail-only" style={{ marginTop: 9, font: "400 11.5px/1.4 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
-          {n(stats.no_gps)} uten GPS-signal
+          {n(stats.proximity_today)} nærhetsavvik i dag
         </div>
       </div>
     </section>

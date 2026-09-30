@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ChiefNode, TeamNode, MemberRow } from "@/lib/api/dashboard";
-import { sparkFor } from "@/lib/mock/world";
+import type {
+  ConsoleChief as ChiefNode,
+  ConsoleTeam as TeamNode,
+  ConsoleMember as MemberRow,
+} from "@/lib/api/console";
 import { useFilter } from "@/lib/store/filter";
 import { n, n1, pct } from "@/lib/format";
 import { spark, gid } from "./util";
@@ -28,6 +31,8 @@ function memberDot(m: MemberRow) {
 
 /** sjef → team → person, expandable. A seller row opens the Hurtigvisning drawer. */
 export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
+  // A team with no campaign has no brand colour; the rail must still render.
+  const colourOf = (c: string | null | undefined) => c || "var(--accent)";
   const router = useRouter();
   const { period, campaign, customFrom, customTo } = useFilter();
   const [openChief, setOpenChief] = useState<string | null>(null);
@@ -89,19 +94,19 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
 
               {co && c.teams.map((t: TeamNode, ti) => {
                 const to = openTeam === t.id;
-                const sp = spark(sparkFor(t.id), 148, 40, 4);
-                const roster = [t.leader, ...(t.coLeader ? [t.coLeader] : []), ...t.members];
-                const maxD = Math.max(1, ...t.members.map((m) => m.doors));
+                const sp = spark(t.spark, 148, 40, 4);
+                const roster = [...(t.leader ? [t.leader] : []), ...(t.coLeader ? [t.coLeader] : []), ...t.members];
+                const maxD = Math.max(1, ...t.members.map((m: MemberRow) => m.doors));
                 const avgD = roster.length ? t.doors / roster.length : 1;
                 return (
                   <div key={t.id} style={{ animation: "dc-rowIn 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${ti * 40}ms` }}>
                     <div {...expandable(() => setOpenTeam(to ? null : t.id), to, `${to ? "Lukk" : "Åpne"} ${t.name}`)} className="dc-hover"
-                         style={{ display: "grid", gridTemplateColumns: "1fr 150px", gap: 16, alignItems: "center", padding: "11px 12px 11px 26px", borderBottom: "1px solid var(--line)", borderLeft: `2px solid ${t.color}`, background: "var(--sunk)", cursor: "pointer" }}>
+                         style={{ display: "grid", gridTemplateColumns: "1fr 150px", gap: 16, alignItems: "center", padding: "11px 12px 11px 26px", borderBottom: "1px solid var(--line)", borderLeft: `2px solid ${colourOf(t.color)}`, background: "var(--sunk)", cursor: "pointer" }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="3" style={caret(to)}><path d="M9 6l6 6-6 6" /></svg>
-                          <span style={{ font: "600 12px/1.2 'IBM Plex Sans', sans-serif" }}>{t.leader.name}</span>
-                          <span style={{ font: "600 11px/1 'IBM Plex Mono', monospace", color: t.color }}>{t.online} ute</span>
+                          <span style={{ font: "600 12px/1.2 'IBM Plex Sans', sans-serif" }}>{t.leader?.name ?? "Uten teamleder"}</span>
+                          <span style={{ font: "600 11px/1 'IBM Plex Mono', monospace", color: colourOf(t.color) }}>{t.online} ute</span>
                           <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>av {t.headcount}</span>
                         </div>
                         <div style={{ display: "flex", gap: 4, marginTop: 9, flexWrap: "wrap", paddingLeft: 19 }}>
@@ -111,7 +116,7 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
                           })}
                         </div>
                       </div>
-                      <svg viewBox="0 0 148 40" preserveAspectRatio="none" style={{ width: 150, height: 40, display: "block", color: t.color }}>
+                      <svg viewBox="0 0 148 40" preserveAspectRatio="none" style={{ width: 150, height: 40, display: "block", color: colourOf(t.color) }}>
                         <defs>
                           <linearGradient id={gid("t" + t.id)} x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="currentColor" stopOpacity="0.32" />
@@ -124,7 +129,7 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
                       </svg>
                     </div>
 
-                    {to && t.members.map((s, si) => {
+                    {to && t.members.map((s: MemberRow, si: number) => {
                       const dev = Math.round((s.doors / avgD - 1) * 100);
                       const c1 = s.dayClass === "under" ? "var(--neg)" : s.dayClass === "half" ? "var(--warn)" : "var(--pos)";
                       const soft = s.dayClass === "under" ? "rgba(255,107,107,.13)" : s.dayClass === "half" ? "rgba(255,192,67,.13)" : "rgba(61,220,151,.13)";

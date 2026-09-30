@@ -30,15 +30,22 @@ export default function LoginPage() {
     return () => window.clearInterval(id);
   }, [booting]);
 
-  const submit = (e: React.FormEvent) => {
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setBusy(true);
     try {
-      const s = signIn(username, password);
+      // Real sign-in: the password is only the first gate — signIn also checks the
+      // console role, so "riktig passord" and "kommer inn" are not the same thing.
+      const s = await signIn(username, password);
       setName(s.name.split(" ")[0]);
       setBooting(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Innlogging feilet.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -89,14 +96,15 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="mt-1 h-10 cursor-pointer rounded-md text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+            disabled={busy || !username.trim() || !password}
+            className="mt-1 h-10 cursor-pointer rounded-md text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ background: "linear-gradient(140deg,#7C5CFC,#5B3FD9)" }}
           >
-            Logg inn
+            {busy ? "Logger inn …" : "Logg inn"}
           </button>
 
           <p className="mt-1 text-center text-[11.5px] text-fg3">
-            Kun for administratorer. <span className="font-mono">admin / admin</span>
+            For administratorer, salgssjefer og teamledere.
           </p>
         </form>
 

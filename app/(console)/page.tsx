@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  fetchStats, fetchDaily, fetchCurve, fetchCampaigns, fetchOutcome,
-  fetchFeed, fetchOrgActivity, fetchAttention,
-} from "@/lib/api/dashboard";
-import { fetchPresence } from "@/lib/api/presence";
-import { useFilter } from "@/lib/store/filter";
+import { fetchOverview } from "@/lib/api/console";
+import { toDaily } from "@/lib/api/toDaily";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { useFilter, periodLabel } from "@/lib/store/filter";
+import { useOverviewQuery } from "@/lib/api/useOverview";
 import { greeting, clock, longDay, n } from "@/lib/format";
 import { getSession } from "@/lib/auth";
 import { KpiBand } from "@/components/kommando/KpiBand";
@@ -23,7 +22,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** Kommandosenter — a faithful port of the Claude Design command centre,
  *  wired to the seeded org. Token system scoped to `.dc`. */
 export default function Kommandosenter() {
-  const chief = useFilter((f) => f.chief);
+  const period = useFilter((f) => f.period);
   const [name, setName] = useState("Lars");
   const [hello, setHello] = useState("God dag");
   const [now, setNow] = useState<Date | null>(null);
@@ -36,15 +35,30 @@ export default function Kommandosenter() {
     return () => clearInterval(t);
   }, []);
 
-  const stats = useQuery({ queryKey: ["stats"], queryFn: fetchStats });
-  const daily = useQuery({ queryKey: ["daily"], queryFn: () => fetchDaily(30) });
-  const curve = useQuery({ queryKey: ["curve"], queryFn: fetchCurve });
-  const campaigns = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
-  const outcome = useQuery({ queryKey: ["outcome"], queryFn: fetchOutcome });
-  const feed = useQuery({ queryKey: ["feed"], queryFn: fetchFeed });
-  const attention = useQuery({ queryKey: ["attention"], queryFn: fetchAttention });
-  const presence = useQuery({ queryKey: ["presence", chief], queryFn: () => fetchPresence(chief) });
-  const org = useQuery({ queryKey: ["org", chief], queryFn: () => fetchOrgActivity(chief) });
+  // ONE request for the whole page (plan Phase 5): every panel below is a slice of
+  // the same rollup read, so fanning out to nine endpoints would be nine round-trips
+  // for the same numbers. Refetches whenever the campaign or period filter changes.
+  // The whole filter set drives it — campaign, chief, team, fylke and period — and every
+  // panel below is a slice of that one response.
+  const overview = useOverviewQuery();
+  const ov = overview.data;
+  const slice = <T,>(pick: (d: NonNullable<typeof ov>) => T) => ({
+    data: ov ? pick(ov) : undefined,
+    isLoading: overview.isLoading,
+    isError: overview.isError,
+    refetch: overview.refetch,
+  });
+
+  const stats = slice((d) => d.stats);
+  // toDaily is presentation only (ticks, labels, over/under class); the doors and each
+  // day's normal come from the API untouched.
+  const daily = slice((d) => toDaily(d.daily));
+  const campaigns = slice((d) => d.campaign_health.campaigns);
+  const outcome = slice((d) => d.outcome);
+  const feed = slice((d) => d.recent_activities);
+  const attention = slice((d) => d.attention);
+  const regions = slice((d) => d.regions);
+  const org = slice((d) => d.org_activity.chiefs);
 
   const s = stats.data;
   const avgJaRate = campaigns.data?.length
@@ -53,7 +67,7 @@ export default function Kommandosenter() {
   // field dots — one per person online, alert positions scattered amber
   const online = s?.online_now ?? 0;
   const dotsN = Math.min(online, 42);
-  const alerts = presence.data?.anomalies.length ?? 0;
+  const alerts = attention.data?.length ?? 0;
   const stride = alerts > 0 ? Math.floor(dotsN / alerts) : dotsN + 1;
   const fieldDots = Array.from({ length: dotsN }, (_, i) =>
     stride > 0 && i > 0 && i % stride === 0 ? "var(--warn)" : "var(--accent)");
@@ -78,25 +92,29 @@ export default function Kommandosenter() {
       </div>
 
       {/* KPI band */}
+      {overview.isError ? (
+        <ErrorState what="oversikten" error={overview.error} onRetry={() => overview.refetch()} />
+      ) : null}
+
       {s && daily.data && outcome.data && attention.data
-        ? <KpiBand daily={daily.data} outcome={outcome.data} stats={s} attention={attention.data} jaSpark={campaigns.data?.[0]?.spark ?? [0.3, 0.4, 0.5, 0.55, 0.6, 0.62, 0.66, 0.7]} avgJaRate={avgJaRate} fieldDots={fieldDots} />
+        ? <KpiBand daily={daily.data} outcome={outcome.data} stats={s} attention={attention.data} jaSpark={campaigns.data?.[0]?.spark ?? []} avgJaRate={avgJaRate} fieldDots={fieldDots} />
         : <Placeholder span={12} h={140} />}
 
       {/* Dagsgraf */}
       {daily.data && outcome.data
-        ? <DayGraph daily={daily.data} curve={curve.data} outcome={outcome.data} staff={s?.headcount ?? 0} />
+        ? <DayGraph daily={daily.data} curve={undefined} outcome={outcome.data} staff={s?.headcount ?? 0} />
         : <Placeholder span={12} h={360} />}
 
       {/* left column */}
       <div style={{ gridColumn: "span 8", alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 14 }}>
-        {campaigns.data ? <CampaignHealth rows={campaigns.data} periodLabel="30 dager" /> : <Placeholder h={300} />}
-        {org.data ? <ActivityTree chiefs={org.data.chiefs} /> : <Placeholder h={360} />}
+        {campaigns.data ? <CampaignHealth rows={campaigns.data} periodLabel={periodLabel(period)} /> : <Placeholder h={300} />}
+        {org.data ? <ActivityTree chiefs={org.data} /> : <Placeholder h={360} />}
       </div>
 
       {/* right column */}
       <div style={{ gridColumn: "span 4", alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 14 }}>
         {outcome.data ? <OutcomePanel outcome={outcome.data} /> : <Placeholder h={260} />}
-        {presence.data ? <RegionsPanel presence={presence.data} /> : <Placeholder h={220} />}
+        {regions.data ? <RegionsPanel regions={regions.data} /> : <Placeholder h={220} />}
         {feed.data ? <EventsFeed feed={feed.data} /> : <Placeholder h={340} />}
       </div>
     </div>

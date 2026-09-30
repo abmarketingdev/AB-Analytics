@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CommandBar } from "./CommandBar";
 import { FilterBar } from "./FilterBar";
+import { useFilterOptions } from "@/lib/api/useFilterOptions";
 import { PersonFilterBar } from "./PersonFilterBar";
 import { NavRail } from "./NavRail";
 import { StatusBar } from "./StatusBar";
@@ -18,6 +19,10 @@ import { NAV, activeHref } from "@/lib/nav";
 /** Four elements never unmount — command bar, nav rail, status bar, dossier
  *  drawer. They are why this reads as one system rather than nine pages. */
 export function AppShell({ children }: { children: React.ReactNode }) {
+  // Loads the real campaign / team / chief / fylke lists once for the whole console and
+  // pushes them into the filter store. Every page reads them from there, so no page
+  // refetches, and none of them can render an option the server would reject.
+  useFilterOptions();
   const router = useRouter();
   const pathname = usePathname();
   const density = useUi((s) => s.density);
