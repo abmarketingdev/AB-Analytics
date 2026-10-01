@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { ErrorState } from "@/components/ui/Skeleton";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Radio, TriangleAlert } from "lucide-react";
 import { fetchDossier } from "@/lib/api/people";
+import { apiFilters, useFilter } from "@/lib/store/filter";
 import { Avatar, DayStrip } from "./bits";
 import { PeekTrend } from "./PeekTrend";
 import { useUi } from "@/lib/store/ui";
@@ -16,7 +18,25 @@ import { cn } from "@/lib/cn";
  *  lives on the full page; this is deliberately five facts and a way in. */
 export function DossierPeek({ personId }: { personId: string }) {
   const closeDrawer = useUi((s) => s.closeDrawer);
-  const q = useQuery({ queryKey: ["dossier", personId], queryFn: () => fetchDossier(personId) });
+  // Without params the API falls back to its own default window (7 d), so the drawer
+  // reported 580 doors while the full profile behind it reported 3 802 for the same
+  // person. Both read the global filter now.
+  const period = useFilter((s) => s.period);
+  const area = useFilter((s) => s.area);
+  const campaign = useFilter((s) => s.campaign);
+  const chief = useFilter((s) => s.chief);
+  const team = useFilter((s) => s.team);
+  const customFrom = useFilter((s) => s.customFrom);
+  const customTo = useFilter((s) => s.customTo);
+  const params = useMemo(
+    () => apiFilters({ period, area, campaign, chief, team, customFrom, customTo }),
+    [period, area, campaign, chief, team, customFrom, customTo],
+  );
+
+  const q = useQuery({
+    queryKey: ["dossier", personId, params],
+    queryFn: () => fetchDossier(personId, params),
+  });
 
   if (q.isPending) return <div className="h-full animate-pulse bg-s1" />;
   if (q.isError || !q.data) return <ErrorState what="dossieret" onRetry={() => q.refetch()} />;

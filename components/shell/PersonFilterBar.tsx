@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDossier } from "@/lib/api/people";
-import { PERIODS, useFilter, type PeriodValue } from "@/lib/store/filter";
+import { PERIODS, apiFilters, useFilter, type PeriodValue } from "@/lib/store/filter";
 import { Calendar, customLabel, rangeHint } from "./FilterBar";
 import { n } from "@/lib/format";
 
@@ -34,7 +34,14 @@ export function PersonFilterBar({ personId }: { personId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  const q = useQuery({ queryKey: ["dossier-campaigns", personId, campaign], queryFn: () => fetchDossier(personId, { campaign_id: campaign !== "all" ? campaign : undefined }) });
+  // Same window as the page it sits on — passing only the campaign left this bar
+  // reading the API's 7-day default while the page below showed 30.
+  const barParams = useMemo(
+    () => apiFilters({ period, area: "all", campaign, chief: "all", team: "all",
+                       customFrom, customTo }),
+    [period, campaign, customFrom, customTo],
+  );
+  const q = useQuery({ queryKey: ["dossier-campaigns", personId, barParams], queryFn: () => fetchDossier(personId, barParams) });
   const worked = q.data?.campaignsWorked ?? [];
 
   const push = (next: Record<string, string>) => {

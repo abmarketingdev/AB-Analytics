@@ -6,8 +6,9 @@ import { SlidersHorizontal } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Avatar } from "@/components/personer/bits";
 import { fetchRoster, type RosterRow } from "@/lib/api/people";
-import { fetchOrgActivity } from "@/lib/api/dashboard";
 import { useFilter, apiFilters } from "@/lib/store/filter";
+import { useOverviewQuery } from "@/lib/api/useOverview";
+import type { ConsoleChief } from "@/lib/api/console";
 import { useUi } from "@/lib/store/ui";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -45,7 +46,10 @@ export default function RangeringPage() {
     queryFn: () => fetchRoster(rankParams),
     staleTime: 60_000,
   });
-  const org = useQuery({ queryKey: ["org", chief], queryFn: () => fetchOrgActivity(chief) });
+  // The team radar reads the same org tree the front page renders — chiefs → teams with
+  // doors, ja-rate, pace, headcount and who is out. It used to come from lib/mock.
+  const overview = useOverviewQuery();
+  const org = { data: overview.data ? { chiefs: overview.data.org_activity.chiefs } : undefined };
 
   const m = METRICS.find((x) => x.id === metric)!;
 
@@ -280,7 +284,7 @@ function Swarm({ rows, metric, stats, hover, onHover, fmt, unit }: {
 }
 
 function TeamTable({ org, metric, fmt, unit }: {
-  org: Awaited<ReturnType<typeof fetchOrgActivity>> | undefined;
+  org: { chiefs: ConsoleChief[] } | undefined;
   metric: Metric; fmt: (v: number) => string; unit: string;
 }) {
   if (!org) return <div className="h-52 animate-pulse rounded-lg bg-s2" />;
@@ -294,14 +298,14 @@ function TeamTable({ org, metric, fmt, unit }: {
       {sorted.map((t, i) => (
         <div key={t.id} className="flex items-center gap-2.5 border-t border-line px-[17px] py-2 text-[12px]">
           <span data-num className={cn("w-5 text-right font-mono text-[11px]", i < 3 ? "font-bold text-iris-soft" : "text-fg3")}>{i + 1}</span>
-          <span className="h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: t.color }} />
+          <span className="h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: t.color ?? "var(--accent)" }} />
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{t.name}</span>
             <span className="block truncate font-mono text-[9.5px] text-fg3">{t.chief} · {t.headcount} pers.</span>
           </span>
           <span className="h-1.5 w-20 overflow-hidden rounded-sm bg-s3">
             <span className="block h-full rounded-sm"
-                  style={{ width: `${Math.min(100, (val(t) / (val(sorted[0]) || 1)) * 100)}%`, background: t.color }} />
+                  style={{ width: `${Math.min(100, (val(t) / (val(sorted[0]) || 1)) * 100)}%`, background: t.color ?? "var(--accent)" }} />
           </span>
           <span data-num className="w-16 text-right font-mono font-semibold">{fmt(val(t))}<span className="ml-0.5 text-[9px] text-fg3">{unit}</span></span>
         </div>
@@ -310,7 +314,7 @@ function TeamTable({ org, metric, fmt, unit }: {
   );
 }
 
-function Radar({ org }: { org: Awaited<ReturnType<typeof fetchOrgActivity>> | undefined }) {
+function Radar({ org }: { org: { chiefs: ConsoleChief[] } | undefined }) {
   if (!org) return <div className="h-52 animate-pulse rounded-lg bg-s2" />;
   const teams = org.chiefs.flatMap((c) => c.teams).slice(0, 3);
   const AX = ["Dører", "Ja-rate", "Tempo", "Bemanning", "Pålogget"];
@@ -341,7 +345,7 @@ function Radar({ org }: { org: Awaited<ReturnType<typeof fetchOrgActivity>> | un
           return (
             <polygon key={t.id}
                      points={vals.map((v, i) => pt(i, Math.min(1, v / maxima[i])).join(",")).join(" ")}
-                     fill={t.color} fillOpacity="0.16" stroke={t.color} strokeWidth="2" />
+                     fill={t.color ?? "var(--accent)"} fillOpacity="0.16" stroke={t.color ?? "var(--accent)"} strokeWidth="2" />
           );
         })}
         {AX.map((label, i) => {
@@ -355,7 +359,7 @@ function Radar({ org }: { org: Awaited<ReturnType<typeof fetchOrgActivity>> | un
       <div className="flex min-w-0 flex-col gap-1.5">
         {teams.map((t) => (
           <div key={t.id} className="flex items-center gap-2 text-[11.5px]">
-            <span className="h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: t.color }} />
+            <span className="h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: t.color ?? "var(--accent)" }} />
             <span className="min-w-0 truncate text-fg2">{t.name}</span>
           </div>
         ))}
