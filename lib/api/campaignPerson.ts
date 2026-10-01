@@ -1,3 +1,5 @@
+import { fetchDossier } from "./people";
+
 /** Campaign-scoped person seam.
  *
  *  WHAT THE BACKEND CAN ACTUALLY ANSWER, checked against the models:
@@ -18,13 +20,6 @@
  *  silently presenting session time as campaign time.
  */
 
-import { CAMPAIGNS, campaignWeek } from "@/lib/mock/world";
-import { AREAS } from "@/lib/mock/geo";
-import { ORG, scaledPeople } from "@/lib/mock/org";
-import { historyFor } from "@/lib/mock/history";
-import { campaignMinutes, campaignShare } from "@/lib/mock/attribution";
-import { mulberry32, seedFrom } from "@/lib/mock/rng";
-import { mockCall } from "./client";
 
 const pct = (p: number, t: number) => (t ? Number(((p / t) * 100).toFixed(1)) : 0);
 
@@ -33,7 +28,7 @@ export interface CampaignPersonDay {
   doors: number;               // this campaign only
   ja: number; nei: number; ikkeHjemme: number; folgOpp: number;
   campaignMinutes: number;     // derived, this campaign
-  sessionMinutes: number;      // work_time_rollup — whole day, every campaign
+  sessionMinutes: number;      // the whole working day, every campaign
   shared: boolean;             // the day was split across campaigns
 }
 
@@ -61,97 +56,66 @@ export interface CampaignPerson {
   areas: Array<{ id: string; name: string; doors: number; ja: number; jaRate: number }>;
 }
 
-export const fetchCampaignPerson = (campaignId: string, personId: string) =>
-  mockCall<CampaignPerson>(() => {
-    const p = ORG.people.get(personId);
-    const camp = CAMPAIGNS.find((c) => c.id === campaignId);
-    if (!p || !camp) throw new Error("Fant ikke personen på denne kampanjen.");
+/** Campaign × person — the dossier, scoped to one campaign.
+ *
+ *  No endpoint of its own: console/person/<id>/?campaign_id= already answers this.
+ *  Every figure in the dossier is campaign-scoped when that filter is set, and the
+ *  per-day rows carry the whole-day totals alongside, so the split between this
+ *  campaign and the rest of the day is shown rather than implied.
+ */
+export async function fetchCampaignPerson(
+  campaignId: string,
+  personId: string,
+): Promise<CampaignPerson> {
+  const d = await fetchDossier(personId, { campaign_id: campaignId });
+  const camp = d.campaignsWorked.find((c) => c.id === campaignId);
 
-    const team = ORG.teams.find((t) => t.id === p.teamId);
-    const chief = ORG.chiefs.find((c) => c.id === p.chiefId);
-    const hist = historyFor(personId).slice(-45);
+  const series: CampaignPersonDay[] = d.history.map((h) => ({
+    day: h.day,
+    doors: h.doors,
+    ja: h.ja, nei: h.nei, ikkeHjemme: h.ikkeHjemme, folgOpp: h.folgOpp,
+    campaignMinutes: h.activeMinutes,
+    sessionMinutes: h.sessionMinutes ?? h.activeMinutes,
+    shared: h.shared ?? false,
+  }));
 
-    const series: CampaignPersonDay[] = hist.map((row) => {
-      const share = campaignShare(personId, campaignId, row.day);
-      const doors = Math.round(row.doors * share);
-      const f = row.doors ? doors / row.doors : 0;
-      return {
-        day: row.day,
-        doors,
-        ja: Math.round(row.ja * f),
-        nei: Math.round(row.nei * f),
-        ikkeHjemme: Math.round(row.ikkeHjemme * f),
-        folgOpp: Math.round(row.folgOpp * f),
-        campaignMinutes: campaignMinutes(row, share),
-        sessionMinutes: row.activeMinutes,
-        shared: share > 0 && share < 1,
-      };
-    });
+  const offDoors = d.history.reduce((a, h) => a + Math.max(0, (h.allCampaignDoors ?? h.doors) - h.doors), 0);
+  const offMinutes = d.history.reduce(
+    (a, h) => a + Math.max(0, (h.sessionMinutes ?? h.activeMinutes) - h.activeMinutes), 0);
 
-    const t = series.reduce(
-      (a, d) => ({
-        doors: a.doors + d.doors, ja: a.ja + d.ja, nei: a.nei + d.nei,
-        ikkeHjemme: a.ikkeHjemme + d.ikkeHjemme, folgOpp: a.folgOpp + d.folgOpp,
-        minutes: a.minutes + d.campaignMinutes,
-        session: a.session + d.sessionMinutes,
-      }),
-      { doors: 0, ja: 0, nei: 0, ikkeHjemme: 0, folgOpp: 0, minutes: 0, session: 0 },
-    );
+  const worked = d.history.filter((h) => h.doors > 0);
+  const firstSeen = worked[0]?.day ?? "";
+  const lastSeen = worked[worked.length - 1]?.day ?? "";
 
-    const active = series.filter((d) => d.doors > 0);
-    const worked = hist.filter((d) => d.doors > 0);
-
-    // rank against everyone else on the campaign, by campaign doors
-    const teamIds = ORG.teams.filter((tt) => tt.campaignId === campaignId).map((tt) => tt.id);
-    const roster = [...scaledPeople().values()].filter((q) => q.teamId && teamIds.includes(q.teamId));
-    const scored = roster
-      .map((q) => ({
-        id: q.id,
-        doors: historyFor(q.id).slice(-45)
-          .reduce((a, row) => a + Math.round(row.doors * campaignShare(q.id, campaignId, row.day)), 0),
-      }))
-      .sort((a, b) => b.doors - a.doors);
-    const campaignDoors = scored.reduce((a, s) => a + s.doors, 0) || 1;
-
-    const r = mulberry32(seedFrom(`cp:${campaignId}:${personId}`));
-    const campAreas = AREAS.filter((a) => a.campaignId === campaignId).slice(0, 5);
-    let left = t.doors;
-    const areas = campAreas.map((a, i) => {
-      const rr = mulberry32(seedFrom(`cpa:${personId}:${a.id}`))();
-      const doors = i === campAreas.length - 1 ? left : Math.round(t.doors * (0.14 + rr * 0.24));
-      left = Math.max(0, left - doors);
-      const ja = Math.round(doors * (0.02 + rr * 0.03));
-      return { id: a.id, name: a.name, doors: Math.max(0, doors), ja, jaRate: pct(ja, doors) };
-    }).filter((a) => a.doors > 0).sort((a, b) => b.doors - a.doors);
-
-    return {
-      person: {
-        id: p.id, name: p.name, initials: p.initials, abId: p.abId,
-        role: p.role, teamName: team?.name ?? "—", chiefName: chief?.name ?? "—",
-        online: p.online,
-      },
-      campaign: { id: camp.id, name: camp.name, color: camp.color, weekOfCampaign: campaignWeek(camp.id) },
-      stats: {
-        doors: t.doors, ja: t.ja, nei: t.nei, ikkeHjemme: t.ikkeHjemme, folgOpp: t.folgOpp,
-        jaRate: pct(t.ja, t.doors),
-        convRate: pct(t.ja, t.ja + t.nei + t.folgOpp),
-        contactRate: pct(t.doors - t.ikkeHjemme, t.doors),
-        campaignMinutes: t.minutes,
-        pace: t.minutes ? Number(((t.doors / t.minutes) * 60).toFixed(1)) : 0,
-        activeDays: active.length,
-        sharedDays: series.filter((d) => d.shared).length,
-        shareOfCampaign: pct(t.doors, campaignDoors),
-        rankOnCampaign: Math.max(1, scored.findIndex((s) => s.id === personId) + 1),
-        rosterSize: scored.length,
-        proximityViolations: p.flag === "proximity" ? 12 : Math.floor(r() * 3),
-        firstSeen: active[0]?.day ?? series[0].day,
-        lastSeen: active[active.length - 1]?.day ?? series[series.length - 1].day,
-      },
-      offCampaign: {
-        doors: worked.reduce((a, d) => a + d.doors, 0) - t.doors,
-        minutes: Math.max(0, t.session - t.minutes),
-      },
-      series,
-      areas,
-    };
-  });
+  return {
+    person: {
+      id: d.row.id, name: d.row.name, initials: d.row.initials, abId: d.row.abId,
+      role: d.row.role, teamName: d.row.teamName, chiefName: d.row.chiefName,
+      online: d.row.online,
+    },
+    campaign: {
+      id: campaignId,
+      name: camp?.name ?? d.row.campaignName,
+      color: camp?.color ?? d.row.campaignColor,
+      weekOfCampaign: 0,
+    },
+    stats: {
+      doors: d.row.doors, ja: d.row.ja,
+      nei: d.row.nei, ikkeHjemme: d.row.ikkeHjemme, folgOpp: d.row.folgOpp,
+      jaRate: d.row.jaRate, convRate: d.row.convRate, contactRate: d.row.contactRate,
+      campaignMinutes: d.row.activeMinutes,
+      pace: d.row.pace,
+      activeDays: worked.length,
+      sharedDays: d.history.filter((h) => h.shared).length,
+      // Needs the campaign's own total, which this payload does not carry; the page
+      // shows a dash rather than a share computed from the wrong denominator.
+      shareOfCampaign: 0,
+      rankOnCampaign: 0, rosterSize: 0,
+      proximityViolations: d.integrity.proximityViolations,
+      firstSeen, lastSeen,
+    },
+    offCampaign: { doors: offDoors, minutes: offMinutes },
+    series,
+    areas: [],
+  };
+}

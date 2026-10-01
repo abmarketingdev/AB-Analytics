@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Download, XCircle } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmailLog } from "@/components/rapporter/EmailLog";
 import { Schedules } from "@/components/rapporter/Schedules";
-import { buildPreview, fetchMailLog, fetchReportHistory } from "@/lib/api/reports";
-import { useFilter } from "@/lib/store/filter";
+import { buildPreview, fetchReportHistory, fetchReportsPage } from "@/lib/api/reports";
+import { apiFilters, useFilter } from "@/lib/store/filter";
 import { n, n1, stamp } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -29,7 +29,24 @@ const kb = (b: number | null) => (b == null ? "—" : `${Math.round(b / 1024)} k
 export default function RapporterPage() {
   const [tab, setTab] = useState<Tab>("bygg");
 
-  const mail = useQuery({ queryKey: ["mail-log", "alle"], queryFn: () => fetchMailLog({}) });
+  const period = useFilter((f) => f.period);
+  const area = useFilter((f) => f.area);
+  const campaignF = useFilter((f) => f.campaign);
+  const chiefF = useFilter((f) => f.chief);
+  const teamF = useFilter((f) => f.team);
+  const customFrom = useFilter((f) => f.customFrom);
+  const customTo = useFilter((f) => f.customTo);
+  const scopeParams = useMemo(
+    () => apiFilters({ period, area, campaign: campaignF, chief: chiefF, team: teamF,
+                       customFrom, customTo }),
+    [period, area, campaignF, chiefF, teamF, customFrom, customTo],
+  );
+  const reportsPage = useQuery({
+    queryKey: ["console-reports", scopeParams],
+    queryFn: () => fetchReportsPage(scopeParams),
+    staleTime: 60_000,
+  });
+  const mail = { ...reportsPage, data: reportsPage.data?.mail };
   const failed = (mail.data ?? []).filter((m) => m.status === "failed").length;
 
   return (

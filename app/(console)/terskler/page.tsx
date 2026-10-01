@@ -6,10 +6,11 @@ import { ChevronDown, FlaskConical, Save, TriangleAlert } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Avatar } from "@/components/personer/bits";
 import {
-  ALERT_LABEL, DEFAULTS, evaluate, fetchBreaches, fetchDeviations, fetchThresholds,
+  ALERT_LABEL, DEFAULTS, fetchThresholdPage,
   type AlertType, type Breach, type Severity,
 } from "@/lib/api/thresholds";
 import { useUi } from "@/lib/store/ui";
+import { apiFilters, useFilter } from "@/lib/store/filter";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -40,13 +41,40 @@ export default function TersklerPage() {
   const [filter, setFilter] = useState<"alle" | Severity>("alle");
   const [open, setOpen] = useState<string | null>(null);
 
-  const rules = useQuery({ queryKey: ["thresholds"], queryFn: fetchThresholds });
-  const breaches = useQuery({ queryKey: ["breaches"], queryFn: () => fetchBreaches(DEFAULTS) });
-  const devs = useQuery({ queryKey: ["deviations"], queryFn: fetchDeviations });
+  // One request for the ladder, the registry and the deviation series, scoped by the
+  // global filter like every other page.
+  const period = useFilter((f) => f.period);
+  const area = useFilter((f) => f.area);
+  const campaign = useFilter((f) => f.campaign);
+  const chief = useFilter((f) => f.chief);
+  const team = useFilter((f) => f.team);
+  const customFrom = useFilter((f) => f.customFrom);
+  const customTo = useFilter((f) => f.customTo);
+  const scopeParams = useMemo(
+    () => apiFilters({ period, area, campaign, chief, team, customFrom, customTo }),
+    [period, area, campaign, chief, team, customFrom, customTo],
+  );
+  const page = useQuery({
+    queryKey: ["console-thresholds", scopeParams],
+    queryFn: () => fetchThresholdPage(scopeParams),
+    staleTime: 60_000,
+  });
+
+  // The what-if runs server-side against the same evaluator, so the simulated registry
+  // is the real one under different knobs — not a second, client-side approximation.
+  const sim_q = useQuery({
+    queryKey: ["console-thresholds-sim", scopeParams, sim],
+    queryFn: () => fetchThresholdPage(scopeParams, sim),
+    enabled: simOpen,
+    staleTime: 30_000,
+  });
+  const rules = { ...page, data: page.data?.rules };
+  const breaches = { ...page, data: page.data?.breaches };
+  const devs = { ...page, data: page.data?.deviations };
 
   /** View-only re-evaluation, exactly like preview?threshold_id= — nothing is
    *  written until Lagre. */
-  const simulated = useMemo(() => (simOpen ? evaluate(sim) : null), [sim, simOpen]);
+  const simulated = simOpen ? (sim_q.data?.breaches ?? null) : null;
 
   const live = breaches.data ?? [];
   const shown = (simulated ?? live).filter((b) => filter === "alle" || b.severity === filter);

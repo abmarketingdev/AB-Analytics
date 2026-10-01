@@ -26,6 +26,7 @@ export interface RosterRow {
   tenureWeeks: number | null;
 
   doors: number; ja: number;
+  nei: number; ikkeHjemme: number; folgOpp: number;
   jaRate: number;            // ja ÷ all doors
   convRate: number;          // ja ÷ (ja + nei + følg opp) — the true pitch conversion
   contactRate: number;       // doors where somebody answered
@@ -72,7 +73,13 @@ export interface DayRow {
   ja: number; nei: number; ikkeHjemme: number; folgOpp: number;
   firstKnock: number;      // decimal hours, Oslo
   lastKnock: number;
-  activeMinutes: number;   // idle-capped at 90 min
+  activeMinutes: number;   // idle-capped at 90 min; prorated when a campaign filter is on
+  /** the whole working day, every campaign — the denominator for a campaign split */
+  sessionMinutes?: number;
+  /** doors that day across every campaign */
+  allCampaignDoors?: number;
+  /** the day was split across more than one campaign */
+  shared?: boolean;
   dayClass: DayClass;
   /** no knocks at all that day — not the same as a short day */
   off: boolean;
