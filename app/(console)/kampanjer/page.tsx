@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,8 @@ import { Card, CardHead } from "@/components/ui/Card";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { Avatar } from "@/components/personer/bits";
 import { fetchCampaignDetail, fetchCampaignList } from "@/lib/api/campaigns";
+import { apiFilters, useFilter } from "@/lib/store/filter";
+import { EmptyState, ErrorState } from "@/components/ui/ErrorState";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -26,10 +28,28 @@ export default function KampanjerPage() {
     if (k) setSelected(k);
   }, [params]);
 
-  const list = useQuery({ queryKey: ["campaign-list"], queryFn: fetchCampaignList });
+  // Every filter except kampanje scopes this page — this page IS the campaign picker,
+  // so narrowing it to one would leave nothing to pick from.
+  const period = useFilter((f) => f.period);
+  const area = useFilter((f) => f.area);
+  const chief = useFilter((f) => f.chief);
+  const team = useFilter((f) => f.team);
+  const customFrom = useFilter((f) => f.customFrom);
+  const customTo = useFilter((f) => f.customTo);
+  // `params` is taken by useSearchParams here
+  const scopeParams = useMemo(
+    () => apiFilters({ period, area, campaign: "all", chief, team, customFrom, customTo }),
+    [period, area, chief, team, customFrom, customTo],
+  );
+
+  const list = useQuery({
+    queryKey: ["campaign-list", scopeParams],
+    queryFn: () => fetchCampaignList(scopeParams),
+    staleTime: 60_000,
+  });
   const detail = useQuery({
-    queryKey: ["campaign-detail", selected],
-    queryFn: () => fetchCampaignDetail(selected!),
+    queryKey: ["campaign-detail", selected, scopeParams],
+    queryFn: () => fetchCampaignDetail(selected!, scopeParams),
     enabled: !!selected,
   });
 
@@ -39,6 +59,17 @@ export default function KampanjerPage() {
     <div className="flex flex-col gap-3.5 p-4">
       {/* grid */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {list.isError && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <ErrorState what="kampanjene" error={list.error} onRetry={() => list.refetch()} />
+          </div>
+        )}
+        {list.data?.length === 0 && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <EmptyState what="Ingen kampanjer i dette utvalget"
+                        hint="Ingen dører er registrert i perioden. Prøv et bredere filter." />
+          </div>
+        )}
         {list.isPending && Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="h-[132px] animate-pulse rounded-lg bg-s1" />
         ))}
