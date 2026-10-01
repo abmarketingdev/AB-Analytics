@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ErrorState } from "@/components/ui/Skeleton";
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { ArrowRight, Radio, TriangleAlert } from "lucide-react";
 import { fetchDossier } from "@/lib/api/people";
 import { apiFilters, useFilter } from "@/lib/store/filter";
@@ -34,6 +34,7 @@ export function DossierPeek({ personId }: { personId: string }) {
   );
 
   const q = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["dossier", personId, params],
     queryFn: () => fetchDossier(personId, params),
   });

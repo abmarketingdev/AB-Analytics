@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { SlidersHorizontal } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Avatar } from "@/components/personer/bits";
@@ -42,6 +42,7 @@ export default function RangeringPage() {
     [period, area, campaign, chief, team, customFrom, customTo],
   );
   const roster = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["console-roster", rankParams],
     queryFn: () => fetchRoster(rankParams),
     staleTime: 60_000,

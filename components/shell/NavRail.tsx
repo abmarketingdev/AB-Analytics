@@ -7,21 +7,29 @@ import { NAV, activeHref } from "@/lib/nav";
 import { useUi } from "@/lib/store/ui";
 import { cn } from "@/lib/cn";
 
-const BADGES: Record<string, { count: number; tone: "crit" | "iris" }> = {
-  alerts: { count: 7, tone: "crit" },
-  online: { count: 23, tone: "iris" },
-};
+import { useOverviewQuery } from "@/lib/api/useOverview";
+
+/** Live counts, from the same overview read the pages use — these were hardcoded
+ *  (7 and 23) and sat in the navigation looking authoritative. */
+function useBadges(): Record<string, { count: number; tone: "crit" | "iris" }> {
+  const { data } = useOverviewQuery();
+  return {
+    alerts: { count: data?.stats.open_alerts ?? 0, tone: "crit" },
+    online: { count: data?.stats.online_now ?? 0, tone: "iris" },
+  };
+}
 
 export function NavRail() {
   const pathname = usePathname();
   const active = activeHref(pathname);
   const { railExpanded, toggleRail } = useUi();
+  const BADGES = useBadges();
 
   return (
     <nav
       className={cn(
         "nav-rail flex flex-none flex-col items-stretch gap-1 border-r border-line bg-s1 py-3 transition-[width] duration-150",
-        railExpanded ? "w-[220px] px-3" : "w-[62px] px-[10px]",
+        railExpanded ? "w-[248px] px-3" : "w-[76px] px-3",
       )}
       aria-label="Hovednavigasjon"
     >
@@ -47,7 +55,7 @@ export function NavRail() {
               main.scrollTo({ top: 0, behavior: "smooth" });
             }}
             className={cn(
-              "relative flex h-10 items-center gap-3 rounded-[10px] transition-colors",
+              "relative flex h-11 items-center gap-3 rounded-[10px] transition-colors",
               railExpanded ? "px-3" : "justify-center",
               on
                 ? "bg-[rgba(124,92,252,0.20)] text-iris-soft shadow-[inset_0_0_0_1px_rgba(124,92,252,0.4)]"

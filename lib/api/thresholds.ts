@@ -1,4 +1,4 @@
-import { getJSON } from "./http";
+import { getJSON, postJSON } from "./http";
 import type { OverviewParams } from "./console";
 
 /** Threshold seam — mirrors reports.AnalyticsThreshold (all 14 knobs) and the
@@ -8,6 +8,8 @@ import type { OverviewParams } from "./console";
 
 export interface Threshold {
   id: string;
+  /** a label the admin gave this rule set; "" for rows that predate naming */
+  name: string;
   scope: "global" | "manager" | "campaign" | "employee";
   scopeLabel: string;
   minDoorsPerDay: number;
@@ -108,3 +110,17 @@ export const fetchThresholdPage = (
     what_if: whatIfRuleId,
     ...Object.fromEntries(Object.entries(sim ?? {}).map(([k, v]) => [k, String(v)])),
   });
+
+// ── saving and activating ────────────────────────────────────────────────────
+/** Save the simulator's knobs as a named rule set. Admin only: a saved rule changes
+ *  who the nightly digest flags, so a lead can simulate but not move the bar.
+ *  Activating is EXCLUSIVE within a scope. */
+export const saveThreshold = (body: Knobs & {
+  name: string;
+  scope?: "global" | "campaign" | "manager" | "employee";
+  activate?: boolean;
+  campaign_id?: string;
+}) => postJSON<Threshold>("/api/dashboard/console/thresholds/save/", body);
+
+export const activateThreshold = (id: string, active = true) =>
+  postJSON<Threshold>(`/api/dashboard/console/thresholds/${id}/activate/`, { active });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchOverview } from "@/lib/api/console";
 import { apiFilters, useFilter } from "@/lib/store/filter";
 
@@ -30,6 +30,7 @@ export function useOverviewQuery() {
   );
 
   return useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["console-overview", params],
     queryFn: () => fetchOverview(params),
     staleTime: 60_000,

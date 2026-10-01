@@ -27,7 +27,7 @@ interface UiState {
 
 export const useUi = create<UiState>((set) => ({
   density: "comfortable",
-  railExpanded: false,
+  railExpanded: true,
   showDetail: false,
   paletteOpen: false,
   drawerId: null,

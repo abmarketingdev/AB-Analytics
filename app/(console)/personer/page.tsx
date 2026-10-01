@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { fetchRoster, type RosterRow } from "@/lib/api/people";
 import { useFilter, apiFilters } from "@/lib/store/filter";
@@ -52,6 +52,7 @@ export default function PersonerPage() {
   const [visible, setVisible] = useState(40);
 
   const roster = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["console-roster", params],
     queryFn: () => fetchRoster(params),
     staleTime: 60_000,

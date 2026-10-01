@@ -18,6 +18,7 @@ export function CommandBar() {
   const [initials, setInitials] = useState("··");
   const [who, setWho] = useState<{ name: string; role: string } | null>(null);
   // Real presence, from the same overview read the rest of the shell uses.
+  const [menuOpen, setMenuOpen] = useState(false);
   const overview = useOverviewQuery();
   const online = overview.data?.stats.online_now ?? null;
 
@@ -68,35 +69,58 @@ export function CommandBar() {
           {density === "compact" ? <Rows4 size={16} /> : <Rows3 size={16} />}
         </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            signOut();
-            router.replace("/login");
-          }}
-          className="cursor-pointer text-fg3 transition-colors hover:text-crit"
-          aria-label="Logg ut"
-          title="Logg ut"
-        >
-          <LogOut size={16} />
-        </button>
-
         <span className="hidden flex-col items-end leading-tight lg:flex" suppressHydrationWarning>
           <span className="text-[11.5px] font-medium text-fg1">{who?.name ?? "—"}</span>
           <span className="text-[10px] uppercase tracking-[0.08em] text-fg3">
             {who ? roleLabel(who.role as ConsoleRole) + (who.role === "admin" ? " · ser alt" : "") : ""}
           </span>
         </span>
-        <span
-          className={cn(
-            "grid h-[27px] w-[27px] flex-none place-items-center rounded-[9px] text-[10.5px] font-bold text-white",
+        {/* The avatar is the account menu. Logging out used to be a bare icon wedged
+            between two display toggles, which nobody found. */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label="Konto"
+            className="grid h-[30px] w-[30px] flex-none cursor-pointer place-items-center rounded-[9px] text-[10.5px] font-bold text-white transition-opacity hover:opacity-85"
+            style={{ background: "var(--iris)" }}
+            suppressHydrationWarning
+          >
+            {initials}
+          </button>
+
+          {menuOpen && (
+            <>
+              {/* click-away, so the menu never sticks open behind a navigation */}
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <div role="menu"
+                   className="absolute right-0 top-[38px] z-50 w-[224px] overflow-hidden rounded-xl border border-line2 bg-s1 shadow-xl">
+                <div className="border-b border-line px-3 py-2.5">
+                  <div className="truncate text-[12.5px] font-semibold text-fg1" suppressHydrationWarning>
+                    {who?.name ?? "—"}
+                  </div>
+                  <div className="mt-0.5 text-[10.5px] uppercase tracking-[0.08em] text-fg3" suppressHydrationWarning>
+                    {who ? roleLabel(who.role as ConsoleRole) : ""}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    signOut();
+                    router.replace("/login");
+                  }}
+                  className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-[12.5px] text-fg2 transition-colors hover:bg-s2 hover:text-crit"
+                >
+                  <LogOut size={14} /> Logg ut
+                </button>
+              </div>
+            </>
           )}
-          style={{ background: "var(--iris)" }}
-          title={who ? `${who.name} · ${roleLabel(who.role as ConsoleRole)}` : undefined}
-          suppressHydrationWarning
-        >
-          {initials}
-        </span>
+        </div>
       </div>
     </header>
   );

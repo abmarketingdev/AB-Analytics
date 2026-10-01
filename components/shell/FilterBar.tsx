@@ -58,6 +58,9 @@ export function FilterBar() {
   // the key, so the bar adds no request of its own.
   const doorsQuery = useOverviewQuery();
   const periodDoors = doorsQuery.data?.stats.period_doors;
+  // The numbers on screen stay put while the new ones load (keepPreviousData), so the
+  // bar says plainly that they are one filter behind rather than silently going stale.
+  const updating = doorsQuery.isFetching;
   // On a phone the five filters were 350px of chrome above the first number,
   // so they fold behind one summary button and the data starts at the top.
   const [showFilters, setShowFilters] = useState(false);
@@ -210,7 +213,8 @@ export function FilterBar() {
         Detaljer
       </button>
 
-      <span className="doors-total" style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{periodDoors === undefined ? "—" : n(periodDoors)} dører i utvalget</span>
+      <span className="doors-total" style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{periodDoors === undefined ? "—" : n(periodDoors)} dører i utvalget
+        {updating && <span style={{ marginLeft: 6, opacity: 0.6 }}>· oppdaterer …</span>}</span>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchDossier, type Dossier } from "@/lib/api/people";
 import type { DayRow } from "@/lib/api/people";
 import { useFilter, apiFilters } from "@/lib/store/filter";
@@ -36,6 +36,7 @@ export default function PersonProfile() {
     [period, area, campaign, chief, team, customFrom, customTo],
   );
   const q = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["dossier", id, scopeParams],
     queryFn: () => fetchDossier(id!, scopeParams),
     enabled: !!id,

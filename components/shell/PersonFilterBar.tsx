@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchDossier } from "@/lib/api/people";
 import { PERIODS, apiFilters, useFilter, type PeriodValue } from "@/lib/store/filter";
 import { Calendar, customLabel, rangeHint } from "./FilterBar";
@@ -41,7 +41,8 @@ export function PersonFilterBar({ personId }: { personId: string }) {
                        customFrom, customTo }),
     [period, campaign, customFrom, customTo],
   );
-  const q = useQuery({ queryKey: ["dossier-campaigns", personId, barParams], queryFn: () => fetchDossier(personId, barParams) });
+  const q = useQuery({
+    placeholderData: keepPreviousData, queryKey: ["dossier-campaigns", personId, barParams], queryFn: () => fetchDossier(personId, barParams) });
   const worked = q.data?.campaignsWorked ?? [];
 
   const push = (next: Record<string, string>) => {

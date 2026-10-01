@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { ErrorState, EmptyState } from "@/components/ui/ErrorState";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Layers, X } from "lucide-react";
 import { CampaignGate } from "@/components/geografi/CampaignGate";
 import { GeoBreadcrumb, GeoDrillList, type Crumb } from "@/components/geografi/GeoDrill";
@@ -44,6 +44,7 @@ export default function GeografiPage() {
   const here = trail[trail.length - 1];
 
   const children = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["geo-children", campaign, here.level, here.code],
     queryFn: () => fetchGeoChildren(campaign, here.level, here.code),
     enabled: campaign !== "all",
@@ -52,18 +53,21 @@ export default function GeografiPage() {
   // Scoped to the region in view: a campaign can span 9 000 areas, and shipping every
   // polygon is megabytes of geometry the map cannot draw usefully at national zoom.
   const areas = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["geo-areas", campaign, here.level, here.code],
     queryFn: () => fetchAreaGeoJson(campaign, here.level, here.code),
     enabled: campaign !== "all",
   });
 
   const knocks = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["geo-knocks", campaign, here.level, here.code],
     queryFn: () => fetchKnockPoints(campaign, here.level, here.code),
     enabled: campaign !== "all" && layer === "tetthet",
   });
 
   const stats = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["area-stats", selected, campaign],
     queryFn: () => fetchAreaStats(selected!, campaign),
     enabled: !!selected,

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { CalendarRange, GitBranch } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Sparkline } from "@/components/charts/Sparkline";
@@ -43,11 +43,13 @@ export default function KampanjerPage() {
   );
 
   const list = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["campaign-list", scopeParams],
     queryFn: () => fetchCampaignList(scopeParams),
     staleTime: 60_000,
   });
   const detail = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["campaign-detail", selected, scopeParams],
     queryFn: () => fetchCampaignDetail(selected!, scopeParams),
     enabled: !!selected,

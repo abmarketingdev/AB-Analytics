@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, FlaskConical, Save, TriangleAlert } from "lucide-react";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Avatar } from "@/components/personer/bits";
 import {
-  ALERT_LABEL, DEFAULTS, fetchThresholdPage,
+  ALERT_LABEL, DEFAULTS, activateThreshold, fetchThresholdPage, saveThreshold,
   type AlertType, type Breach, type Severity,
 } from "@/lib/api/thresholds";
 import { useUi } from "@/lib/store/ui";
@@ -37,6 +37,15 @@ const KNOBS: Array<{ key: keyof typeof DEFAULTS; label: string; group: string; m
 
 export default function TersklerPage() {
   const [sim, setSim] = useState(DEFAULTS);
+  // Dragging a slider fires a change per pixel; the request follows the value the user
+  // settled on, not every value they passed through on the way there.
+  const [simDebounced, setSimDebounced] = useState(DEFAULTS);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSimDebounced(sim), 250);
+    return () => window.clearTimeout(t);
+  }, [sim]);
+  const [saveName, setSaveName] = useState("");
+  const [saveOpen, setSaveOpen] = useState(false);
   const [simOpen, setSimOpen] = useState(false);
   const [filter, setFilter] = useState<"alle" | Severity>("alle");
   const [open, setOpen] = useState<string | null>(null);
@@ -55,6 +64,7 @@ export default function TersklerPage() {
     [period, area, campaign, chief, team, customFrom, customTo],
   );
   const page = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["console-thresholds", scopeParams],
     queryFn: () => fetchThresholdPage(scopeParams),
     staleTime: 60_000,
@@ -63,8 +73,9 @@ export default function TersklerPage() {
   // The what-if runs server-side against the same evaluator, so the simulated registry
   // is the real one under different knobs — not a second, client-side approximation.
   const sim_q = useQuery({
-    queryKey: ["console-thresholds-sim", scopeParams, sim],
-    queryFn: () => fetchThresholdPage(scopeParams, sim),
+    placeholderData: keepPreviousData,
+    queryKey: ["console-thresholds-sim", scopeParams, simDebounced],
+    queryFn: () => fetchThresholdPage(scopeParams, simDebounced),
     enabled: simOpen,
     staleTime: 30_000,
   });
@@ -75,6 +86,29 @@ export default function TersklerPage() {
   /** View-only re-evaluation, exactly like preview?threshold_id= — nothing is
    *  written until Lagre. */
   const simulated = simOpen ? (sim_q.data?.breaches ?? null) : null;
+
+  const qc = useQueryClient();
+  const isAdmin = page.data?.rules !== undefined;   // the write itself is gated server-side
+  const save = useMutation({
+    mutationFn: (activate: boolean) =>
+      saveThreshold({ ...sim, name: saveName.trim(), scope: "global", activate }),
+    onSuccess: () => {
+      setSaveOpen(false); setSaveName("");
+      qc.invalidateQueries({ queryKey: ["console-thresholds"] });
+      qc.invalidateQueries({ queryKey: ["console-thresholds-sim"] });
+    },
+  });
+  const activate = useMutation({
+    mutationFn: (id: string) => activateThreshold(id, true),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["console-thresholds"] }),
+  });
+
+  /** Load a saved rule set into the simulator, so it can be compared before activating. */
+  const loadPreset = (r: (typeof DEFAULTS) & { id?: string }) => {
+    const { id: _id, ...knobs } = r as Record<string, unknown> & { id?: string };
+    setSim((s) => ({ ...s, ...(knobs as typeof DEFAULTS) }));
+    setSimOpen(true);
+  };
 
   const live = breaches.data ?? [];
   const shown = (simulated ?? live).filter((b) => filter === "alle" || b.severity === filter);
@@ -130,20 +164,61 @@ export default function TersklerPage() {
         <Card>
           <CardHead
             title="Hva-hvis-simulator"
-            sub="kun visning — ingenting lagres"
+            sub={sim_q.isFetching ? "beregner …" : "kun visning — ingenting lagres før du trykker Lagre"}
             right={
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setSim(DEFAULTS)}
                         className="cursor-pointer rounded-md border border-line2 px-2.5 py-1 text-[11.5px] text-fg3 hover:text-fg1">
                   Nullstill
                 </button>
-                <button type="button"
+                <button type="button" onClick={() => setSaveOpen((v) => !v)}
                         className="flex cursor-pointer items-center gap-1.5 rounded-md bg-iris px-2.5 py-1 text-[11.5px] font-semibold text-white">
                   <Save size={12} /> Lagre
                 </button>
               </div>
             }
           />
+
+          {saveOpen && (
+            <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-iris/35 bg-iris/5 p-3">
+              <label className="flex min-w-[240px] flex-1 flex-col gap-1">
+                <span className="t-label">Navn på regelsettet</span>
+                <input
+                  autoFocus
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder="f.eks. Høst 2026 — justert avslagsrate"
+                  className="h-9 rounded-md border border-line2 bg-s2 px-3 text-[13px] text-fg1 outline-none focus:border-iris"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={!saveName.trim() || save.isPending}
+                onClick={() => save.mutate(false)}
+                className="h-9 cursor-pointer rounded-md border border-line2 px-3 text-[12px] text-fg2 hover:text-fg1 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Lagre uten å aktivere
+              </button>
+              <button
+                type="button"
+                disabled={!saveName.trim() || save.isPending}
+                onClick={() => save.mutate(true)}
+                className="h-9 cursor-pointer rounded-md bg-iris px-3 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {save.isPending ? "Lagrer …" : "Lagre og aktiver"}
+              </button>
+              {save.isError && (
+                <span className="text-[12px] text-crit">
+                  {save.error instanceof Error ? save.error.message : "Kunne ikke lagre."}
+                </span>
+              )}
+              <p className="w-full text-[11.5px] text-fg3">
+                Å aktivere gjør dette til den gjeldende terskelen for hele organisasjonen —
+                også for den daglige avviksrapporten kl. 21:10. Et aktivt regelsett erstatter
+                det forrige på samme nivå.
+              </p>
+            </div>
+          )}
 
           {diff && (
             <div className="mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-iris/35 bg-iris/8 px-4 py-3">
@@ -211,9 +286,33 @@ export default function TersklerPage() {
                   <div className="t-label mb-1 mt-1.5">{scope}</div>
                   {rows.map((r) => (
                     <div key={r.id}
-                         className="mb-1 flex items-center gap-2 rounded-md border border-line bg-s2 px-2.5 py-1.5">
-                      <span className={cn("h-2 w-2 flex-none rounded-full", depth === 3 ? "bg-iris" : "bg-line2")} />
-                      <span className="min-w-0 flex-1 truncate text-[11.5px]">{r.scopeLabel}</span>
+                         className={cn("group mb-1 flex items-center gap-2 rounded-md border px-2.5 py-1.5",
+                                       r.isActive ? "border-iris/45 bg-iris/8" : "border-line bg-s2")}>
+                      <span className={cn("h-2 w-2 flex-none rounded-full",
+                                          r.isActive ? "bg-iris" : "bg-line2")}
+                            title={r.isActive ? "Aktiv" : "Lagret, ikke aktiv"} />
+                      <button
+                        type="button"
+                        onClick={() => loadPreset(r)}
+                        title="Last inn i simulatoren"
+                        className="min-w-0 flex-1 cursor-pointer truncate text-left text-[11.5px] hover:text-fg1"
+                      >
+                        {r.name || r.scopeLabel}
+                        {r.affected > 0 && (
+                          <span className="ml-1.5 text-[10px] text-fg3">· {r.affected}</span>
+                        )}
+                      </button>
+                      {!r.isActive && (
+                        <button
+                          type="button"
+                          onClick={() => activate.mutate(r.id)}
+                          disabled={activate.isPending}
+                          title="Gjør denne gjeldende"
+                          className="hidden cursor-pointer rounded border border-line2 px-1.5 py-0.5 text-[10px] text-fg3 hover:text-fg1 group-hover:block disabled:opacity-40"
+                        >
+                          Aktiver
+                        </button>
+                      )}
                       <span data-num className="font-mono text-[11px] text-fg2">{r.minDoorsPerDay}</span>
                     </div>
                   ))}
@@ -226,6 +325,7 @@ export default function TersklerPage() {
           </div>
           <p className="mt-auto border-t border-line pt-2.5 text-[10.5px] leading-snug text-fg3">
             Den mest spesifikke regelen vinner: ansatt før kampanje før leder før standard.
+            Klikk et regelsett for å laste det inn i simulatoren; «Aktiver» gjør det gjeldende.
           </p>
         </Card>
 

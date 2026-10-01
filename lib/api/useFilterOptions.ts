@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchFilterOptions } from "@/lib/api/console";
 import { useFilter } from "@/lib/store/filter";
 
@@ -16,6 +16,7 @@ export function useFilterOptions() {
   const setOptionsStatus = useFilter((s) => s.setOptionsStatus);
 
   const q = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["console-filters"],
     queryFn: fetchFilterOptions,
     staleTime: 10 * 60 * 1000,      // the roster of campaigns/teams barely moves

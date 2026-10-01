@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { CheckCircle2, Download, XCircle } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmailLog } from "@/components/rapporter/EmailLog";
@@ -42,6 +42,7 @@ export default function RapporterPage() {
     [period, area, campaignF, chiefF, teamF, customFrom, customTo],
   );
   const reportsPage = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["console-reports", scopeParams],
     queryFn: () => fetchReportsPage(scopeParams),
     staleTime: 60_000,
@@ -87,6 +88,7 @@ function Builder() {
   const [on, setOn] = useState<string[]>(SECTIONS.map((s) => s.id));
 
   const preview = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["preview-report", start, end, campaign, chief],
     queryFn: () => buildPreview(start, end, campaign, chief),
   });
@@ -244,7 +246,8 @@ function Builder() {
 const HIST_COLS = "190px 90px 100px 100px 110px 90px 1fr 40px";
 
 function History() {
-  const q = useQuery({ queryKey: ["report-history"], queryFn: fetchReportHistory });
+  const q = useQuery({
+    placeholderData: keepPreviousData, queryKey: ["report-history"], queryFn: fetchReportHistory });
 
   return (
     <div className="flex min-h-0 flex-col">

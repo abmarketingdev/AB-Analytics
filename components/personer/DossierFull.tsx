@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ErrorState } from "@/components/ui/Skeleton";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   ArrowLeft, Check, ChevronRight, Layers, Radio, Route, ShieldCheck, SlidersHorizontal,
   TrendingUp, TriangleAlert, X,
@@ -52,6 +52,7 @@ export function DossierFull({ personId }: { personId: string }) {
   );
 
   const q = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["dossier", personId, params],
     queryFn: () => fetchDossier(personId, params),
   });
