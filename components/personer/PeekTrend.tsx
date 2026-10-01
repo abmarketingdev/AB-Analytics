@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, Cell, ReferenceLine, ResponsiveContainer, Tooltip } from "recharts";
-import type { DayRow } from "@/lib/mock/history";
+import type { DayRow } from "@/lib/api/people";
 import { n } from "@/lib/format";
 
 /** The peek's 30-day trend, as coloured bars instead of one red jagged line.

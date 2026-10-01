@@ -34,7 +34,7 @@ export function PersonFilterBar({ personId }: { personId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  const q = useQuery({ queryKey: ["dossier", personId, campaign], queryFn: () => fetchDossier(personId, campaign) });
+  const q = useQuery({ queryKey: ["dossier-campaigns", personId, campaign], queryFn: () => fetchDossier(personId, { campaign_id: campaign !== "all" ? campaign : undefined }) });
   const worked = q.data?.campaignsWorked ?? [];
 
   const push = (next: Record<string, string>) => {

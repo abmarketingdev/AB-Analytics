@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ErrorState } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -11,13 +11,13 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { InteractiveTrend } from "@/components/charts/InteractiveTrend";
 import { fetchDossier, type ThresholdCheck, type ThresholdRung } from "@/lib/api/people";
-import { useFilter } from "@/lib/store/filter";
+import { useFilter, apiFilters } from "@/lib/store/filter";
 import { Avatar } from "./bits";
 import { Pulse, normalFor, pulseFill } from "./Pulse";
 import { DAY_TOLERANCE_PCT } from "@/lib/api/thresholds";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import type { DayClass } from "@/lib/mock/org";
+import type { DayClass } from "@/lib/api/people";
 
 const hhmm = (h: number) =>
   h ? `${String(Math.floor(h)).padStart(2, "0")}:${String(Math.round((h % 1) * 60) % 60).padStart(2, "0")}` : "—";
@@ -40,9 +40,20 @@ export function DossierFull({ personId }: { personId: string }) {
   const [scope, setScope] = useState<string>("auto");
   const campaignId = pinned ?? globalCampaign;
 
+  // The dossier is scoped by the same filters as every other page; `pinned` lets this
+  // page look at one campaign without moving the global filter.
+  const period = useFilter((s) => s.period);
+  const customFrom = useFilter((s) => s.customFrom);
+  const customTo = useFilter((s) => s.customTo);
+  const params = useMemo(
+    () => ({ ...apiFilters({ period, area: "all", campaign: campaignId, chief: "all",
+                             team: "all", customFrom, customTo }) }),
+    [period, campaignId, customFrom, customTo],
+  );
+
   const q = useQuery({
-    queryKey: ["dossier", personId, campaignId, scope],
-    queryFn: () => fetchDossier(personId, campaignId, scope),
+    queryKey: ["dossier", personId, params],
+    queryFn: () => fetchDossier(personId, params),
   });
 
   if (q.isPending) return <div className="h-full animate-pulse bg-s1" />;

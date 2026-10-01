@@ -22,7 +22,7 @@ interface Props {
   selectedAreaId: string | null;
   focus: { lon: number; lat: number; zoom: number } | null;
   onSelectArea: (id: string | null) => void;
-  onHoverArea: (p: AreaFeatureProps | null) => void;
+  onHoverArea: (p: AreaFeatureProps | null, at?: { x: number; y: number }) => void;
   onUnsupported?: () => void;
 }
 
@@ -161,7 +161,8 @@ export default function GeoMap({
       m.on("mousemove", "areas-fill", (e: MapLayerMouseEvent) => {
         m.getCanvas().style.cursor = "pointer";
         const f = e.features?.[0];
-        if (f) onHoverArea(f.properties as AreaFeatureProps);
+        // e.point is already map-relative pixels, which is what the tooltip needs
+        if (f) onHoverArea(f.properties as AreaFeatureProps, { x: e.point.x, y: e.point.y });
       });
       m.on("mouseleave", "areas-fill", () => {
         m.getCanvas().style.cursor = "";

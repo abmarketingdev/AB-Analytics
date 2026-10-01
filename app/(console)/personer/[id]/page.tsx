@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDossier, type Dossier } from "@/lib/api/people";
-import type { DayRow } from "@/lib/mock/history";
-import { useFilter } from "@/lib/store/filter";
+import type { DayRow } from "@/lib/api/people";
+import { useFilter, apiFilters } from "@/lib/store/filter";
 import { n, n1, pct } from "@/lib/format";
 import { spark } from "@/components/kommando/util";
 import { clickable } from "@/lib/a11y";
@@ -27,7 +27,19 @@ export default function PersonProfile() {
   const router = useRouter();
   const { period, campaign, customFrom, customTo } = useFilter();
 
-  const q = useQuery({ queryKey: ["dossier", id, campaign], queryFn: () => fetchDossier(id!, campaign), enabled: !!id });
+  const area = useFilter((f) => f.area);
+  const chief = useFilter((f) => f.chief);
+  const team = useFilter((f) => f.team);
+  // `params` is already taken by useParams on this page
+  const scopeParams = useMemo(
+    () => apiFilters({ period, area, campaign, chief, team, customFrom, customTo }),
+    [period, area, campaign, chief, team, customFrom, customTo],
+  );
+  const q = useQuery({
+    queryKey: ["dossier", id, scopeParams],
+    queryFn: () => fetchDossier(id!, scopeParams),
+    enabled: !!id,
+  });
   const d = q.data;
 
   const back = () => {
@@ -329,7 +341,7 @@ function ThresholdChain({ chain, effectiveId }: { chain: Dossier["thresholdChain
 
 /* ── Arbeidsvindu: first→last knock per day, vs team median start ── */
 function WorkWindow({ history, medianStart }: { history: DayRow[]; medianStart: number }) {
-  const days = history.filter((h) => h.hired && !h.off && h.doors > 0).slice(-14);
+  const days = history.filter((h) => h.hired && h.dayClass !== "off" && h.doors > 0).slice(-14);
   const lo = 13, hi = 22; // hour axis
   const span = hi - lo;
   const topPct = (h: number) => ((hi - h) / span) * 100;

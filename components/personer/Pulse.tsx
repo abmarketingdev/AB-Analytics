@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { DayRow } from "@/lib/mock/history";
+import type { DayRow } from "@/lib/api/people";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 

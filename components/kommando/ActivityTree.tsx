@@ -81,9 +81,14 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
                     <div style={{ font: "400 10.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)", marginTop: 4 }}>{c.teams.length} team · {c.headcount} personer</div>
                   </div>
                 </div>
-                <div className="at-pace" data-l="Andel av dagen" style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <div className="at-pace" data-l="Andel av dagen"
+                     title={`${n1(c.shareOfDay)} % av en full dag · ${c.online} ute nå`}
+                     style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  {/* Share of a full day actually worked today, in ACTIVE minutes. This
+                      was `pace / 8` — doors-per-hour divided by eight, which is not a
+                      share of anything, and the backend sent a hardcoded 0 besides. */}
                   <div style={{ flex: 1, height: 7, borderRadius: 4, background: "var(--sunk)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 4, width: `${Math.min(100, Math.round((c.pace / 8) * 100))}%`, background: "var(--accent)" }} />
+                    <div style={{ height: "100%", borderRadius: 4, width: `${Math.min(100, c.shareOfDay)}%`, background: "var(--accent)" }} />
                   </div>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 5, font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx2)", width: 44 }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--pos)" }} />{c.online}</span>
                 </div>

@@ -16,7 +16,7 @@ interface Props {
   selectedAreaId: string | null;
   focus: { lon: number; lat: number; zoom: number } | null;
   onSelectArea: (id: string | null) => void;
-  onHoverArea: (p: AreaFeatureProps | null) => void;
+  onHoverArea: (p: AreaFeatureProps | null, at?: { x: number; y: number }) => void;
 }
 
 /** Renderer for machines without WebGL2 — and what most people here actually see, so
@@ -233,7 +233,10 @@ export default function GeoMapFallback({
             strokeOpacity={selectedAreaId === p.id ? 1 : 0.55}
             className="cursor-pointer"
             onClick={() => onSelectArea(p.id)}
-            onMouseEnter={() => onHoverArea(p.props)}
+            onMouseMove={(e) => {
+                const b = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
+                onHoverArea(p.props, { x: e.clientX - b.left, y: e.clientY - b.top });
+              }}
             onMouseLeave={() => onHoverArea(null)}
           />
         ))}

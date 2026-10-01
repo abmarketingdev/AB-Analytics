@@ -1,6 +1,6 @@
 "use client";
 
-import type { DayClass } from "@/lib/mock/org";
+import type { DayClass } from "@/lib/api/people";
 import { cn } from "@/lib/cn";
 
 export const DAY_COLOR: Record<DayClass, string> = {

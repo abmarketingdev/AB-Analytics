@@ -35,6 +35,9 @@ export default function GeografiPage() {
   const [layer, setLayer] = useState<GeoLayer>("penetrasjon");
   const [selected, setSelected] = useState<string | null>(null);
   const [hover, setHover] = useState<AreaFeatureProps | null>(null);
+  // Where the pointer is inside the map, so the readout can sit next to the polygon
+  // instead of in the far corner — at national zoom the corner is a different county.
+  const [hoverAt, setHoverAt] = useState<{ x: number; y: number } | null>(null);
   const [focus, setFocus] = useState<{ lon: number; lat: number; zoom: number } | null>(null);
   const [noGpu, setNoGpu] = useState(false);
 
@@ -155,7 +158,7 @@ export default function GeografiPage() {
               selectedAreaId={selected}
               focus={focus}
               onSelectArea={setSelected}
-              onHoverArea={setHover}
+              onHoverArea={(p, at) => { setHover(p); setHoverAt(at ?? null); }}
             />
           ) : (
             <GeoMap
@@ -166,7 +169,7 @@ export default function GeografiPage() {
               selectedAreaId={selected}
               focus={focus}
               onSelectArea={setSelected}
-              onHoverArea={setHover}
+              onHoverArea={(p, at) => { setHover(p); setHoverAt(at ?? null); }}
               onUnsupported={() => setNoGpu(true)}
             />
           )}
@@ -207,12 +210,20 @@ export default function GeografiPage() {
             </div>
           </div>
 
-          {/* hover readout */}
-          {hover && (
-            <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg border border-line2 bg-s1/95 px-3 py-2 backdrop-blur">
+          {/* hover readout — follows the cursor, flipped near the edges so it never
+              falls off the map */}
+          {hover && hoverAt && (
+            <div
+              className="pointer-events-none absolute z-10 rounded-lg border border-line2 bg-s1/95 px-3 py-2 shadow-lg backdrop-blur"
+              style={{
+                left: hoverAt.x + 14,
+                top: hoverAt.y + 14,
+                transform: `translate(${hoverAt.x > window.innerWidth - 420 ? "-100%" : "0"}, ${hoverAt.y > window.innerHeight - 160 ? "-100%" : "0"})`,
+              }}
+            >
               <div className="text-[12.5px] font-semibold">{hover.name}</div>
               <div data-num className="mt-0.5 font-mono text-[10.5px] text-fg3">
-                {n(hover.doors)} dører · {n1(hover.penetration)} % banket · {n1(hover.ja_rate)} % ja ·{" "}
+                {n(hover.doors)} dører · {n1(hover.penetration)} % banket · {n1(hover.ja_rate)} % ja ·{" "}
                 <span className="text-ih">{n(hover.remaining)} igjen</span>
               </div>
             </div>

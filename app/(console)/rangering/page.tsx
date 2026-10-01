@@ -7,7 +7,7 @@ import { Card, CardHead } from "@/components/ui/Card";
 import { Avatar } from "@/components/personer/bits";
 import { fetchRoster, type RosterRow } from "@/lib/api/people";
 import { fetchOrgActivity } from "@/lib/api/dashboard";
-import { useFilter } from "@/lib/store/filter";
+import { useFilter, apiFilters } from "@/lib/store/filter";
 import { useUi } from "@/lib/store/ui";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -25,18 +25,32 @@ const METRICS: Array<{ id: Metric; label: string; unit: string; fmt: (v: number)
 
 export default function RangeringPage() {
   const chief = useFilter((s) => s.chief);
+  const period = useFilter((s) => s.period);
+  const area = useFilter((s) => s.area);
+  const campaign = useFilter((s) => s.campaign);
+  const team = useFilter((s) => s.team);
+  const customFrom = useFilter((s) => s.customFrom);
+  const customTo = useFilter((s) => s.customTo);
   const [tab, setTab] = useState<"personer" | "team">("personer");
   const [metric, setMetric] = useState<Metric>("doors");
   const [hover, setHover] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
 
-  const roster = useQuery({ queryKey: ["roster", chief], queryFn: () => fetchRoster(chief) });
+  const rankParams = useMemo(
+    () => apiFilters({ period, area, campaign, chief, team, customFrom, customTo }),
+    [period, area, campaign, chief, team, customFrom, customTo],
+  );
+  const roster = useQuery({
+    queryKey: ["console-roster", rankParams],
+    queryFn: () => fetchRoster(rankParams),
+    staleTime: 60_000,
+  });
   const org = useQuery({ queryKey: ["org", chief], queryFn: () => fetchOrgActivity(chief) });
 
   const m = METRICS.find((x) => x.id === metric)!;
 
   const ranked = useMemo(
-    () => [...(roster.data ?? [])].sort((a, b) => (b[metric] as number) - (a[metric] as number)),
+    () => [...(roster.data?.rows ?? [])].sort((a, b) => (b[metric] as number) - (a[metric] as number)),
     [roster.data, metric],
   );
 
@@ -138,7 +152,7 @@ export default function RangeringPage() {
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {ranked.slice(-6).reverse().map((r) => {
             const why =
-              r.tenureWeeks <= 6 ? { t: "Ny — under opptrapping", tone: "text-fo" }
+              (r.tenureWeeks ?? 0) <= 6 ? { t: "Ny — under opptrapping", tone: "text-fo" }
               : r.doors < 900 ? { t: "Volum, ikke konvertering", tone: "text-ih" }
               : r.convRate < 3 ? { t: "Konvertering, ikke volum", tone: "text-warn" }
               : { t: "Ujevn leveranse", tone: "text-warn" };

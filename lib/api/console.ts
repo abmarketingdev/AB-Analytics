@@ -66,6 +66,7 @@ export interface ConsoleMember {
   online: boolean;
   doors: number; ja: number; jaRate: number; doorsToday: number;
   pace: number; firstKnock: string; lastKnock: string; activeMinutes: number;
+  shareOfDay: number;
   dayClass: "full" | "half" | "under" | "off";
 }
 
@@ -79,12 +80,15 @@ export interface ConsoleTeam {
   members: ConsoleMember[];
   headcount: number; online: number; doors: number; ja: number;
   jaRate: number; pace: number;
+  shareOfDay: number;
 }
 
 export interface ConsoleChief {
   id: string; name: string; initials: string; abId: string;
   teams: ConsoleTeam[];
   headcount: number; online: number; doors: number; ja: number; jaRate: number; pace: number;
+  /** active minutes ÷ a full day, averaged over the people who worked today */
+  shareOfDay: number;
 }
 
 export interface ConsoleOverview {

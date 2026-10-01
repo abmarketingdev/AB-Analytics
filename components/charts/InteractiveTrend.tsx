@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import {
   Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import type { DayRow } from "@/lib/mock/history";
+import type { DayRow } from "@/lib/api/people";
 import { n, n1 } from "@/lib/format";
 import { cn } from "@/lib/cn";
 

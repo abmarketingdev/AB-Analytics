@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { fetchRoster, type RosterRow } from "@/lib/api/people";
-import { sparkFor } from "@/lib/mock/world";
-import { useFilter } from "@/lib/store/filter";
+import { useFilter, apiFilters } from "@/lib/store/filter";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { n, n1, pct } from "@/lib/format";
 import { spark } from "@/components/kommando/util";
 import { clickable } from "@/lib/a11y";
@@ -38,12 +38,25 @@ const HEAD: React.CSSProperties = {
 export default function PersonerPage() {
   const router = useRouter();
   const { period, campaign, chief, customFrom, customTo } = useFilter();
+  // The WHOLE filter set scopes the roster — period, by, kampanje, salgssjef and team.
+  // The page previously passed only chief+campaign, so changing the period changed the
+  // label and nothing else.
+  const area = useFilter((f) => f.area);
+  const team = useFilter((f) => f.team);
+  const params = useMemo(
+    () => apiFilters({ period, area, campaign, chief, team, customFrom, customTo }),
+    [period, area, campaign, chief, team, customFrom, customTo],
+  );
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("avvik");
   const [visible, setVisible] = useState(40);
 
-  const roster = useQuery({ queryKey: ["roster", chief, campaign], queryFn: () => fetchRoster(chief, campaign) });
-  const rows = roster.data ?? [];
+  const roster = useQuery({
+    queryKey: ["console-roster", params],
+    queryFn: () => fetchRoster(params),
+    staleTime: 60_000,
+  });
+  const rows = roster.data?.rows ?? [];
 
   const openProfile = (id: string) => {
     const sp = new URLSearchParams();
@@ -133,7 +146,12 @@ export default function PersonerPage() {
         </div>
 
         {roster.isPending && <SkeletonRows rows={9} columns={COLS} rowHeight={46} />}
-        {!roster.isPending && shown.length === 0 && (
+        {roster.isError && (
+          <div style={{ padding: 16 }}>
+            <ErrorState what="personlisten" error={roster.error} onRetry={() => roster.refetch()} />
+          </div>
+        )}
+        {!roster.isPending && !roster.isError && shown.length === 0 && (
           <EmptyState
             title={query.trim() ? `Ingen treff på “${query.trim()}”` : "Ingen personer i utvalget"}
             hint={query.trim()
@@ -154,7 +172,7 @@ export default function PersonerPage() {
           const dc = devColor(dev);
           const half = Math.min(48, Math.abs(dev));
           const circ = 94.2;
-          const sp = spark(sparkFor(r.id), 132, 30, 3);
+          const sp = spark(r.series, 132, 30, 3);
           return (
             <div key={r.id} {...clickable(() => openProfile(r.id), `Åpne profil for ${r.name}`)} className="dc-hover roster-row"
                  style={{ position: "relative", display: "grid", gridTemplateColumns: COLS, gap: 14, alignItems: "center", padding: "8px 16px", borderBottom: "1px solid var(--line)", cursor: "pointer", animation: "dc-rowIn 0.2s cubic-bezier(.2,.8,.2,1) both", animationDelay: `${Math.min(i, 20) * 18}ms` }}>

@@ -11,7 +11,7 @@ import { n } from "@/lib/format";
  *  live, so a global "MOCK" stamp would be a lie there, and dropping it everywhere would
  *  be a lie on the pages still waiting for their endpoint. Remove a route from this list
  *  when its page is wired. */
-const MOCK_ROUTES = ["/personer", "/live", "/kampanjer", "/rangering", "/terskler", "/rapporter"];
+const MOCK_ROUTES = ["/live", "/kampanjer", "/terskler", "/rapporter"];
 
 /** The bar that makes the product feel instrumented: it tells you which slice of data is
  *  on screen, how fresh it is, and whether this page is live yet. */
