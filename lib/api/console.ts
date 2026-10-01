@@ -46,7 +46,8 @@ export interface ConsoleCampaign {
 
 export interface ConsoleActivity {
   id: string; time: string; agent: string; action: string;
-  location: string; campaign: string; tone: string;
+  /** null for a knock with no campaign attached */
+  location: string; campaign: string | null; tone: string;
 }
 
 export interface ConsoleAttention {

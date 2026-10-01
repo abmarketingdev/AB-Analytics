@@ -1,6 +1,7 @@
 "use client";
 
 import type { ConsoleOutcome, ConsoleRegion, ConsoleActivity } from "@/lib/api/console";
+import type { LiveKnock } from "@/lib/api/liveSocket";
 import { n, n1, pct } from "@/lib/format";
 
 const CARD: React.CSSProperties = { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: 18 };
@@ -111,12 +112,36 @@ const TONE: Record<string, { color: string; chipBg: string }> = {
   neutral: { color: "var(--o-ih)",  chipBg: "rgba(201,169,97,.14)" },
 };
 
-/** Hendelser — the live event stream. */
-export function EventsFeed({ feed }: { feed: ConsoleActivity[] }) {
+/** Hendelser — the live event stream.
+ *
+ *  Two sources, deliberately: the REST snapshot fills the panel on load, and the socket
+ *  prepends knocks as they are recorded. Before this, the panel was ONLY the snapshot
+ *  and still wore a pulsing "LIVE" badge — the badge now reflects the actual socket. */
+export function EventsFeed({ feed, live = [], isLive = false }: {
+  feed: ConsoleActivity[];
+  live?: LiveKnock[];
+  isLive?: boolean;
+}) {
   // The payload is the last N knocks, newest first, each with the Oslo wall-clock time
   // the knock was recorded. No synthetic "events/min": the span of a 20-row window says
   // nothing reliable about rate, and the old figure was computed from mock timestamps.
   const span = feed.length > 1 ? `${feed[feed.length - 1].time}–${feed[0].time}` : "";
+
+  // Live events first, then the snapshot. Ids from the socket are the address id, which
+  // is what the snapshot uses too, so a knock cannot appear twice.
+  const seen = new Set(live.map((k) => k.id));
+  const rows: ConsoleActivity[] = [
+    ...live.map((k) => ({
+      id: k.id,
+      time: new Date(k.ts).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" }),
+      agent: "",
+      action: k.action,
+      location: k.address,
+      campaign: null,
+      tone: k.tone,
+    })),
+    ...feed.filter((f) => !seen.has(f.id)),
+  ];
   return (
     <section style={{ flex: 1, minHeight: 340, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px 12px", borderBottom: "1px solid var(--line)" }}>
@@ -124,16 +149,20 @@ export function EventsFeed({ feed }: { feed: ConsoleActivity[] }) {
           <h2 style={H2}>Hendelser</h2>
           <span style={{ font: "400 10.5px/1 'IBM Plex Mono', monospace", color: "var(--tx3)" }}>{span}</span>
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10.5px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: "var(--pos)" }}><LivePip />LIVE</span>
+        <span title={isLive ? "Tilkoblet — dører vises etter hvert som de registreres" : "Ikke tilkoblet — viser siste registrerte dører"}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, font: "500 10.5px/1 'IBM Plex Mono', monospace", letterSpacing: ".08em", color: isLive ? "var(--pos)" : "var(--tx3)" }}>
+          {isLive ? <LivePip /> : <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--tx3)" }} />}
+          {isLive ? "LIVE" : "SISTE"}
+        </span>
       </div>
       <div style={{ position: "relative", flex: 1, overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden", padding: "6px 18px 0" }}>
-          {feed.length === 0 && (
+          {rows.length === 0 && (
             <p style={{ margin: "10px 0 0", font: "400 12px/1.5 'IBM Plex Sans', sans-serif", color: "var(--tx2)" }}>
               Ingen hendelser i dette utvalget ennå.
             </p>
           )}
-          {feed.map((e, i) => {
+          {rows.map((e, i) => {
             const k = TONE[e.tone] ?? TONE.neutral;
             const where = e.campaign ? `${e.location} · ${e.campaign}` : e.location;
             return (

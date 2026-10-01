@@ -7,6 +7,7 @@ import { toDaily } from "@/lib/api/toDaily";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useFilter, periodLabel } from "@/lib/store/filter";
 import { useOverviewQuery } from "@/lib/api/useOverview";
+import { useLiveKnocks } from "@/lib/api/useLiveKnocks";
 import { greeting, clock, longDay, n } from "@/lib/format";
 import { getSession } from "@/lib/auth";
 import { KpiBand } from "@/components/kommando/KpiBand";
@@ -58,6 +59,8 @@ export default function Kommandosenter() {
   const feed = slice((d) => d.recent_activities);
   const attention = slice((d) => d.attention);
   const regions = slice((d) => d.regions);
+  // Knocks as they happen, on top of the snapshot the overview already returned.
+  const { knocks: liveKnocks, isLive } = useLiveKnocks();
   const org = slice((d) => d.org_activity.chiefs);
 
   const s = stats.data;
@@ -115,7 +118,7 @@ export default function Kommandosenter() {
       <div style={{ gridColumn: "span 4", alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 14 }}>
         {outcome.data ? <OutcomePanel outcome={outcome.data} /> : <Placeholder h={260} />}
         {regions.data ? <RegionsPanel regions={regions.data} /> : <Placeholder h={220} />}
-        {feed.data ? <EventsFeed feed={feed.data} /> : <Placeholder h={340} />}
+        {feed.data ? <EventsFeed feed={feed.data} live={liveKnocks} isLive={isLive} /> : <Placeholder h={340} />}
       </div>
     </div>
   );
