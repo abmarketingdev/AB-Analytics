@@ -14,7 +14,8 @@ import { KpiBand } from "@/components/kommando/KpiBand";
 import { DayGraph } from "@/components/kommando/DayGraph";
 import { CampaignHealth } from "@/components/kommando/CampaignHealth";
 import { ActivityTree } from "@/components/kommando/ActivityTree";
-import { OutcomePanel, RegionsPanel, EventsFeed } from "@/components/kommando/SidePanels";
+import { OutcomePanel, RegionsPanel } from "@/components/kommando/SidePanels";
+import { EventsTable } from "@/components/kommando/EventsTable";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Kbd } from "@/components/ui/Kbd";
 
@@ -118,8 +119,10 @@ export default function Kommandosenter() {
       <div style={{ gridColumn: "span 4", alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 14 }}>
         {outcome.data ? <OutcomePanel outcome={outcome.data} /> : <Placeholder h={260} />}
         {regions.data ? <RegionsPanel regions={regions.data} /> : <Placeholder h={220} />}
-        {feed.data ? <EventsFeed feed={feed.data} live={liveKnocks} isLive={isLive} /> : <Placeholder h={340} />}
       </div>
+
+      {/* Hendelser — full width under the panels (client 2026-11-05) */}
+      {feed.data ? <EventsTable feed={feed.data} live={liveKnocks} isLive={isLive} /> : <Placeholder span={12} h={420} />}
     </div>
   );
 }

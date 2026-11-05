@@ -48,6 +48,9 @@ export interface ConsoleActivity {
   id: string; time: string; agent: string; action: string;
   /** null for a knock with no campaign attached */
   location: string; campaign: string | null; tone: string;
+  // Added for the Hendelser table's detail row; optional so an older backend still parses.
+  ts?: string; status?: string; employee_id?: string | null; campaign_id?: string | null;
+  city?: string | null; nei_reason?: string | null; gps?: string | null; gps_distance_m?: number | null;
 }
 
 export interface ConsoleAttention {
