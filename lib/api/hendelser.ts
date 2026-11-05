@@ -91,8 +91,9 @@ export function fromSocket(k: LiveKnock, names: Record<string, string>, campaign
     status: k.status,
     action: k.action,
     tone: k.tone,
-    personId: k.employee_id,
-    person: (k.employee_id && names[k.employee_id]) || "",
+    // A sales chief or lead knocking carries only manager_id.
+    personId: k.employee_id ?? k.manager_id,
+    person: names[k.employee_id ?? k.manager_id ?? ""] || "",
     address: k.address,
     city: cityFromAddress(k.address),
     campaignId: k.campaign_id,
@@ -150,4 +151,41 @@ export function usePersonDay(personId: string | null, open: boolean) {
     staleTime: 20_000,
     retry: 1,
   });
+}
+
+// ── What a live socket knock lacks: name, GPS check, nei reason ─────────────
+//   GET /api/dashboard/console/knocks/?ids=a,b   (max 60)
+// Asked a few seconds after a knock arrives (the knock has to reach analytics first),
+// again every 15 s for rows still missing, and never for rows that are complete.
+
+export interface KnockDetail {
+  person_id: string | null; person: string; status: string; action: string; city: string | null;
+  nei_reason: string | null; gps: string | null; gps_distance_m: number | null;
+}
+
+export function useKnockDetails(ids: string[]) {
+  const key = ids.slice(0, 60).sort().join(",");
+  return useQuery({
+    queryKey: ["hendelser-knocks", key],
+    queryFn: async () => (await getJSON<{ knocks: Record<string, KnockDetail> }>("/api/dashboard/console/knocks/", { ids: key })).knocks,
+    enabled: key.length > 0,
+    staleTime: 10_000,
+    refetchInterval: key ? 15_000 : false,
+    placeholderData: (prev) => prev,
+    retry: 1,
+  });
+}
+
+/** Fill a row's gaps from the knock detail; never overwrite what the row already has. */
+export function enrich(r: EventRow, d: KnockDetail | undefined): EventRow {
+  if (!d) return r;
+  return {
+    ...r,
+    personId: r.personId ?? d.person_id,
+    person: r.person || d.person,
+    city: r.city ?? d.city,
+    neiReason: r.neiReason ?? d.nei_reason,
+    gps: r.gps ?? d.gps,
+    gpsDistance: r.gpsDistance ?? d.gps_distance_m,
+  };
 }

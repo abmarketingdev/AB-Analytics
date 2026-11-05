@@ -8,13 +8,13 @@
  *  are recorded — now as a table you can filter by outcome, search, and open: a row
  *  expands into the knock's detail and that person's day so far.
  */
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, MapPin, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import type { ConsoleActivity } from "@/lib/api/console";
 import type { LiveKnock } from "@/lib/api/liveSocket";
 import {
-  fromSnapshot, fromSocket, osloHM, osloHMS, usePeopleNames, usePersonDay,
+  enrich, fromSnapshot, fromSocket, osloHM, osloHMS, useKnockDetails, usePeopleNames, usePersonDay,
   type EventRow, type Outcome,
 } from "@/lib/api/hendelser";
 import { useFilter } from "@/lib/store/filter";
@@ -51,14 +51,30 @@ export function EventsTable({ feed, live, isLive }: { feed: ConsoleActivity[]; l
     return out;
   }, [campaignOpts]);
 
-  const names = usePeopleNames(feed, live.map((k) => k.employee_id));
-  const rows = useMemo(() => {
+  const names = usePeopleNames(feed, live.map((k) => k.employee_id ?? k.manager_id));
+  const base = useMemo(() => {
+    // A knock in both the snapshot and the socket: the snapshot row is the complete one.
+    const snap = new Map(feed.map((a) => [a.id, a]));
     const seen = new Set<string>();
     const out: EventRow[] = [];
-    for (const k of live) if (!seen.has(k.id)) { seen.add(k.id); out.push(fromSocket(k, names, campaignNames)); }
+    for (const k of live) {
+      if (seen.has(k.id)) continue;
+      seen.add(k.id);
+      const s = snap.get(k.id);
+      out.push(s ? { ...fromSnapshot(s), live: true } : fromSocket(k, names, campaignNames));
+    }
     for (const a of feed) if (!seen.has(a.id)) { seen.add(a.id); out.push(fromSnapshot(a)); }
     return out;
   }, [live, feed, names, campaignNames]);
+  // Socket rows that still miss a name or the GPS check: ask analytics for them in one batch.
+  // Rows younger than 4 s are skipped — the knock may not have reached analytics yet.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setClock(Date.now()), 5_000); return () => clearInterval(t); }, []);
+  const missing = useMemo(() => base
+    .filter((r) => r.live && (!r.person || !r.gps) && r.ts && clock - new Date(r.ts).getTime() > 4_000)
+    .map((r) => r.id), [base, clock]);
+  const details = useKnockDetails(missing);
+  const rows = useMemo(() => base.map((r) => (r.live ? enrich(r, details.data?.[r.id]) : r)), [base, details.data]);
 
   const [filter, setFilter] = useState<"alle" | Outcome>("alle");
   const [q, setQ] = useState("");
