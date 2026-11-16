@@ -23,7 +23,7 @@ const hhmm = (h: number) =>
   h ? `${String(Math.floor(h)).padStart(2, "0")}:${String(Math.round((h % 1) * 60) % 60).padStart(2, "0")}` : "—";
 
 const SCOPE_LABEL: Record<ThresholdRung["scope"], string> = {
-  global: "Global", manager: "Salgssjef", campaign: "Kampanje", employee: "Ansatt",
+  global: "Global", manager: "Salgsleder", campaign: "Kampanje", employee: "Ansatt",
 };
 
 /** The full dossier, laid out as a ruled instrument rather than a stack of cards.

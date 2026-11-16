@@ -62,7 +62,7 @@ export function GlobalFilter() {
         onChange={(v) => { setCampaign(v); push({ kampanje: v }); }}
       />
       <Select
-        ariaLabel="Salgssjef"
+        ariaLabel="Salgsleder"
         value={chief}
         isSet={chief !== "all"}
         options={CHIEFS.map((c) => ({ value: c.id, label: c.name }))}

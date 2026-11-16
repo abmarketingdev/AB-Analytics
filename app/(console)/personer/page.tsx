@@ -38,7 +38,7 @@ const HEAD: React.CSSProperties = {
 export default function PersonerPage() {
   const router = useRouter();
   const { period, campaign, chief, customFrom, customTo } = useFilter();
-  // The WHOLE filter set scopes the roster — period, by, kampanje, salgssjef and team.
+  // The WHOLE filter set scopes the roster — period, by, kampanje, salgsleder and team.
   // The page previously passed only chief+campaign, so changing the period changed the
   // label and nothing else.
   const area = useFilter((f) => f.area);
@@ -156,7 +156,7 @@ export default function PersonerPage() {
           <EmptyState
             title={query.trim() ? `Ingen treff på “${query.trim()}”` : "Ingen personer i utvalget"}
             hint={query.trim()
-              ? "Søket gjelder navn, team, salgssjef og kampanje."
+              ? "Søket gjelder navn, team, salgsleder og kampanje."
               : "Filtrene over utelukker alle. Prøv å nullstille dem."}
             action={query.trim() ? (
               <button onClick={() => setQuery("")} className="dc-hoverline"

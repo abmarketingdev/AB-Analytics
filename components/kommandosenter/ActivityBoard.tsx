@@ -32,7 +32,7 @@ const FLAG_TEXT: Record<string, string> = {
 };
 
 /** Keeps the time axis — you still see WHEN — but adds the org hierarchy, so
- *  the admin can walk salgssjef → team → enkeltperson without leaving. */
+ *  the admin can walk salgsleder → team → enkeltperson without leaving. */
 export function ActivityBoard({ chiefs, progress }: { chiefs: ChiefNode[]; progress: number }) {
   const [openChiefs, setOpenChiefs] = useState<Set<string>>(() => new Set([chiefs[0]?.id]));
   const [openTeams, setOpenTeams] = useState<Set<string>>(() => new Set());
@@ -54,7 +54,7 @@ export function ActivityBoard({ chiefs, progress }: { chiefs: ChiefNode[]; progr
         const cOpen = openChiefs.has(c.id);
         return (
           <div key={c.id} className="border-t border-line first:border-t-0">
-            {/* ── salgssjef ─────────────────────────────────────────── */}
+            {/* ── salgsleder ─────────────────────────────────────────── */}
             <button
               type="button"
               onClick={() => toggle(openChiefs, c.id, setOpenChiefs)}
@@ -67,7 +67,7 @@ export function ActivityBoard({ chiefs, progress }: { chiefs: ChiefNode[]; progr
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[12.5px] font-semibold">{c.name}</span>
                   <span className="block truncate font-mono text-[10px] text-fg3">
-                    salgssjef · {c.teams.length} team · {c.headcount} pers.
+                    salgsleder · {c.teams.length} team · {c.headcount} pers.
                   </span>
                 </span>
               </span>

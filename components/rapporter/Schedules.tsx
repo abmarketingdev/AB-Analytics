@@ -70,7 +70,7 @@ export function Schedules() {
 
       <p className="flex-none border-t border-line px-4 py-2.5 text-[11px] text-fg3">
         Tidene er Oslo-tid og kjøres av <span className="font-mono text-fg2">analytics-scheduler</span>.
-        Mottakere utledes fra teamleder, co-leder og salgssjef, deduplisert.
+        Mottakere utledes fra teamleder, co-leder og salgsleder, deduplisert.
       </p>
     </div>
   );

@@ -118,7 +118,7 @@ function Builder() {
               {CAMPAIGNS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </Field>
-          <Field label="Salgssjef">
+          <Field label="Salgsleder">
             <select value={chief} onChange={(e) => setChief(e.target.value)} className={INPUT}>
               {CHIEFS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>

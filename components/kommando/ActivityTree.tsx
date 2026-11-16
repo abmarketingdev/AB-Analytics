@@ -60,7 +60,7 @@ export function ActivityTree({ chiefs }: { chiefs: ChiefNode[] }) {
         <span className="hide-sm" style={{ font: "400 11.5px/1 'IBM Plex Sans', sans-serif", color: "var(--tx3)" }}>klikk for å utvide</span>
       </div>
       <div className="at-head" style={HEAD}>
-        <span>Salgssjef</span><span>Andel av dagen</span>
+        <span>Salgsleder</span><span>Andel av dagen</span>
         <span style={{ textAlign: "right" }}>Dører</span>
         <span style={{ textAlign: "right" }}>Ja-rate</span>
         <span style={{ textAlign: "right" }}>D/t</span>

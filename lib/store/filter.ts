@@ -34,7 +34,7 @@ export interface Option {
 /** "Alle …" is a UI affordance, not a row: it means "send no filter". */
 const ALL_CAMPAIGNS: Option = { id: "all", name: "Alle kampanjer", color: "var(--iris)" };
 const ALL_AREAS: Option = { id: "all", name: "Alle byer" };
-const ALL_CHIEFS: Option = { id: "all", name: "Alle salgssjefer" };
+const ALL_CHIEFS: Option = { id: "all", name: "Alle salgsledere" };
 const ALL_TEAMS_OPT: Option = { id: "all", name: "Alle team" };
 
 export type OptionsStatus = "idle" | "loading" | "ready" | "error";
@@ -148,7 +148,7 @@ export function filterQuery(s: Pick<FilterState, "period" | "area" | "campaign" 
   const st = useFilter.getState();
   const nm = (list: Option[], id: string) => list.find((o) => o.id === id)?.name ?? id;
   return `periode=${periodLabel(s.period)} · by=${nm(st.areas, s.area)} · kampanje=${nm(
-    st.campaigns, s.campaign)} · salgssjef=${nm(st.chiefs, s.chief)} · team=${nm(st.teams, s.team)}`;
+    st.campaigns, s.campaign)} · salgsleder=${nm(st.chiefs, s.chief)} · team=${nm(st.teams, s.team)}`;
 }
 
 export const periodLabel = (v: PeriodValue) => PERIODS.find((p) => p.value === v)?.label ?? v;

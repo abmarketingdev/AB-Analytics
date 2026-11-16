@@ -310,7 +310,7 @@ function DoorsChart({ history, normal, floor }: { history: DayRow[]; normal: num
 
 /* ── Terskelkjede ── */
 function ThresholdChain({ chain, effectiveId }: { chain: Dossier["thresholdChain"]; effectiveId: string }) {
-  const level: Record<string, string> = { global: "Global", manager: "Salgssjef", campaign: "Kampanje", employee: "Ansatt" };
+  const level: Record<string, string> = { global: "Global", manager: "Salgsleder", campaign: "Kampanje", employee: "Ansatt" };
   return (
     <section style={{ ...CARD, gridColumn: "span 4", alignSelf: "stretch", display: "flex", flexDirection: "column", padding: 18 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>

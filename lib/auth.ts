@@ -86,7 +86,7 @@ export async function signIn(username: string, password: string): Promise<Sessio
     clearTokens();
     if (err instanceof ApiError && err.status === 403) {
       throw new Error(
-        "AB Analytics er for administratorer, salgssjefer og teamledere. Kontoen din har ikke den rollen.",
+        "AB Analytics er for administratorer, salgsledere og teamledere. Kontoen din har ikke den rollen.",
       );
     }
     throw new Error(err instanceof Error ? err.message : "Kunne ikke hente tilgangen din.");
@@ -114,5 +114,5 @@ export function signOut() {
 
 /** Norwegian label for the role badge in the shell. */
 export function roleLabel(role: ConsoleRole): string {
-  return role === "admin" ? "Administrator" : role === "chief" ? "Salgssjef" : "Teamleder";
+  return role === "admin" ? "Administrator" : role === "chief" ? "Salgsleder" : "Teamleder";
 }

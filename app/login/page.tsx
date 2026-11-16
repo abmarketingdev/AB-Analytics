@@ -94,7 +94,7 @@ export default function LoginPage() {
           </button>
 
           <p className="mt-1 text-center text-[11.5px] text-fg3">
-            For administratorer, salgssjefer og teamledere.
+            For administratorer, salgsledere og teamledere.
           </p>
         </form>
       </div>

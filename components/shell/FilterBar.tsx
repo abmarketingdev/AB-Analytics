@@ -33,7 +33,7 @@ export function customLabel(fromISO: string, toISO: string): string {
 interface Opt { value: string; label: string; hint?: string; color?: string }
 
 /** The global scope, rendered as the Claude Design labeled filter bar:
- *  PERIODE · BY · KAMPANJE · SALGSSJEF · TEAM, each a stacked label + value pill
+ *  PERIODE · BY · KAMPANJE · SALGSLEDER · TEAM, each a stacked label + value pill
  *  with a dropdown (PERIODE also carries a custom-range calendar). Scoped to
  *  `.dc` for the mockup's tokens; store + URL wiring keeps a view shareable. */
 export function FilterBar() {
@@ -112,7 +112,7 @@ export function FilterBar() {
       set: (v: string) => { setCampaign(v); push({ kampanje: v }); },
     },
     {
-      key: "chief", label: "Salgssjef", minw: 154, value: chief, display: CHIEFS.find((c) => c.id === chief)?.name, isSet: chief !== "all",
+      key: "chief", label: "Salgsleder", minw: 154, value: chief, display: CHIEFS.find((c) => c.id === chief)?.name, isSet: chief !== "all",
       dot: chief === "all" ? "var(--tx3)" : "var(--accent)",
       options: CHIEFS.map<Opt>((c) => ({ value: c.id, label: c.name })),
       set: (v: string) => { setChief(v); push({ salgssjef: v, team: "all" }); },
